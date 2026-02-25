@@ -1,0 +1,46 @@
+{
+  "name": "myaika",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/server & npm run dev -w apps/web",
+    "dev:server": "npm run dev -w apps/server",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:web:https": "npm run dev:https -w apps/web",
+    "dev:ipad": "powershell -ExecutionPolicy Bypass -File scripts/dev_ipad.ps1",
+    "dev:worker": "node apps/server/worker.js",
+    "tts": "node apps/server/scripts/tts_sample.js",
+    "voice:smoke": "node apps/server/scripts/voice_smoke.js",
+    "voice:test": "node apps/server/scripts/voice_fulltest.js",
+    "aika": "node apps/server/cli/aika.js",
+    "ingest:signals": "node apps/server/scripts/signals_ingest.js",
+    "rag:backup": "node apps/server/scripts/backup_rag_drive.js",
+    "rag:doctor": "node apps/server/scripts/rag_doctor.js",
+    "rag:fts": "node apps/server/scripts/rebuild_rag_fts.js",
+    "rag:sample": "node apps/server/scripts/rag_hybrid_sample.js",
+    "rag:eval": "node apps/server/scripts/rag_eval.js",
+    "durham:sync": "node apps/server/scripts/durham_pipeline.js",
+    "restaurants:sync": "node apps/server/scripts/durham_pipeline.js",
+    "trade:smoke": "node apps/server/scripts/trading_tools_smoke.js",
+    "coinbase:auth": "node apps/server/scripts/coinbase_auth_smoke.js",
+    "desktop:sample": "node apps/server/scripts/desktop_sample.js",
+    "desktop:record": "node apps/server/scripts/desktop_record_sample.js",
+    "memory:retention": "node apps/server/scripts/memory_retention.js",
+    "worker": "node apps/server/worker.js",
+    "test": "node scripts/run_tests.js",
+    "smoke": "node scripts/full_smoke_test.js",
+    "ui:smoke": "node scripts/ui_smoke.js",
+    "gptsovits": "node apps/server/scripts/start_gptsovits.js",
+    "piper:voices": "powershell -ExecutionPolicy Bypass -File scripts/install_piper_voices.ps1",
+    "live2d:import": "powershell -ExecutionPolicy Bypass -File scripts/import_live2d_samples.ps1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.41.2"
+  },
+  "dependencies": {
+    "tts": "^0.1.0"
+  }
+}

@@ -1,0 +1,531 @@
+import { ToolRegistry } from "./registry.js";
+import { ToolExecutor } from "./executor.js";
+import { createNote, searchNotesTool } from "./tools/notes.js";
+import { createTodo, listTodos, updateTodo, completeTodo, createTodoList, listTodoLists, updateTodoList } from "./tools/todos.js";
+import { summarizeMeeting } from "./tools/meeting.js";
+import { proposeHold } from "./tools/calendar.js";
+import { draftReply, sendEmail, convertEmailToTodo, scheduleFollowUp, replyWithContextTool, sendWithContext, inboxTriage } from "./tools/email.js";
+import { applyChanges } from "./tools/spreadsheet.js";
+import { writeMemoryTool, searchMemoryTool, rotateKeyTool } from "./tools/memory.js";
+import { actionRun } from "./tools/actionRunner.js";
+import { assessActionPlan, extractDomainsFromPlan } from "../src/actionRunner/runner.js";
+import { desktopRun } from "./tools/desktopRunner.js";
+import { assessDesktopPlan } from "../src/desktopRunner/runner.js";
+import { skillVaultRun } from "./tools/skillVault.js";
+import { assessSkillPermissions } from "../src/skillVault/registry.js";
+import { systemModify } from "./tools/system.js";
+import { snapshot as biSnapshot } from "./tools/bi.js";
+import {
+  plexIdentity,
+  firefliesTranscripts,
+  weatherCurrent,
+  webSearch,
+  shoppingProductResearch,
+  shoppingAmazonAddToCart,
+  slackPost,
+  telegramSend,
+  discordSend
+} from "./tools/integrations.js";
+
+const registry = new ToolRegistry();
+
+registry.register(
+  {
+    name: "meeting.summarize",
+    description: "Summarize a meeting transcript and store markdown + Google Doc.",
+    paramsSchema: {
+      transcript: "string",
+      title: "string",
+      date: "string",
+      attendees: "string[]",
+      tags: "string[]",
+      store: "object"
+    },
+    riskLevel: "low"
+  },
+  summarizeMeeting
+);
+
+registry.register(
+  {
+    name: "notes.create",
+    description: "Create a note and store in Google Docs + local cache.",
+    paramsSchema: { title: "string", body: "string", tags: "string[]", store: "object" },
+    riskLevel: "low"
+  },
+  createNote
+);
+
+registry.register(
+  {
+    name: "notes.search",
+    description: "Search local notes index/cache.",
+    paramsSchema: { query: "string", tags: "string[]", limit: "number" },
+    riskLevel: "low"
+  },
+  searchNotesTool
+);
+
+registry.register(
+  {
+    name: "todos.createList",
+    description: "Create a todo list.",
+    paramsSchema: { name: "string", color: "string", icon: "string", sortOrder: "number" },
+    riskLevel: "low"
+  },
+  createTodoList
+);
+
+registry.register(
+  {
+    name: "todos.listLists",
+    description: "List todo lists.",
+    paramsSchema: {},
+    riskLevel: "low"
+  },
+  listTodoLists
+);
+
+registry.register(
+  {
+    name: "todos.updateList",
+    description: "Update a todo list.",
+    paramsSchema: { id: "string", name: "string", color: "string", icon: "string", sortOrder: "number" },
+    riskLevel: "low"
+  },
+  updateTodoList
+);
+
+registry.register(
+  {
+    name: "todos.create",
+    description: "Create a todo item.",
+    paramsSchema: {
+      title: "string",
+      details: "string",
+      notes: "string",
+      due: "string",
+      reminderAt: "string",
+      repeatRule: "string",
+      priority: "string",
+      tags: "string[]",
+      steps: "object[]",
+      listId: "string",
+      pinned: "boolean"
+    },
+    riskLevel: "low"
+  },
+  createTodo
+);
+
+registry.register(
+  {
+    name: "todos.list",
+    description: "List todos with filters.",
+    paramsSchema: { status: "string", dueWithinDays: "number", tag: "string", listId: "string", query: "string", limit: "number" },
+    riskLevel: "low"
+  },
+  listTodos
+);
+
+registry.register(
+  {
+    name: "todos.update",
+    description: "Update a todo item.",
+    paramsSchema: {
+      id: "string",
+      title: "string",
+      details: "string",
+      notes: "string",
+      due: "string",
+      reminderAt: "string",
+      repeatRule: "string",
+      priority: "string",
+      tags: "string[]",
+      steps: "object[]",
+      listId: "string",
+      pinned: "boolean",
+      sortOrder: "number",
+      status: "string"
+    },
+    riskLevel: "low"
+  },
+  updateTodo
+);
+
+registry.register(
+  {
+    name: "todos.complete",
+    description: "Complete a todo item.",
+    paramsSchema: { id: "string" },
+    riskLevel: "low"
+  },
+  completeTodo
+);
+
+registry.register(
+  {
+    name: "calendar.proposeHold",
+    description: "Create a draft calendar hold locally.",
+    paramsSchema: { title: "string", start: "string", end: "string", timezone: "string", attendees: "string[]", location: "string", description: "string" },
+    riskLevel: "medium",
+    requiresApproval: params => Array.isArray(params?.attendees) && params.attendees.length > 0,
+    humanSummary: params => `Create calendar hold for ${params?.title || "event"}`
+  },
+  proposeHold
+);
+
+registry.register(
+  {
+    name: "email.draftReply",
+    description: "Create a draft email reply locally.",
+    paramsSchema: { originalEmail: "object", tone: "string", context: "string", signOffName: "string" },
+    riskLevel: "medium"
+  },
+  draftReply
+);
+
+registry.register(
+  {
+    name: "email.inboxTriage",
+    description: "Fetch inbox previews and return a triage summary.",
+    paramsSchema: { providers: "string[]", limit: "number", lookbackDays: "number" },
+    riskLevel: "low"
+  },
+  inboxTriage
+);
+
+registry.register(
+  {
+    name: "email.send",
+    description: "Send a drafted email or quick message (approval required unless autonomy-safe).",
+    paramsSchema: {
+      draftId: "string",
+      sendTo: "string[]",
+      to: "string[]",
+      subject: "string",
+      body: "string",
+      cc: "string[]",
+      bcc: "string[]",
+      autonomy: "string"
+    },
+    requiresApproval: true,
+    outbound: true,
+    riskLevel: "high",
+    humanSummary: params => {
+      const target = Array.isArray(params?.sendTo) && params.sendTo.length
+        ? params.sendTo.join(", ")
+        : Array.isArray(params?.to) && params.to.length
+          ? params.to.join(", ")
+          : params?.draftId
+            ? `draft ${params.draftId}`
+            : "email";
+      const subject = params?.subject ? ` (${params.subject})` : "";
+      return `Send ${target}${subject}`;
+    }
+  },
+  sendEmail
+);
+
+registry.register(
+  {
+    name: "email.convertToTodo",
+    description: "Convert an email into a todo item.",
+    paramsSchema: { email: "object", title: "string", details: "string", notes: "string", due: "string", reminderAt: "string", priority: "string", tags: "string[]", listId: "string" },
+    riskLevel: "low"
+  },
+  convertEmailToTodo
+);
+
+registry.register(
+  {
+    name: "email.scheduleFollowUp",
+    description: "Schedule a follow-up task (and optional calendar hold) for an email.",
+    paramsSchema: { email: "object", followUpAt: "string", reminderAt: "string", priority: "string", tags: "string[]", listId: "string", hold: "object", notes: "string" },
+    riskLevel: "medium"
+  },
+  scheduleFollowUp
+);
+
+registry.register(
+  {
+    name: "email.replyWithContext",
+    description: "Draft a reply using RAG context from notes and todos.",
+    paramsSchema: { email: "object", tone: "string", signOffName: "string", ragTopK: "number", ragModel: "string" },
+    riskLevel: "medium"
+  },
+  replyWithContextTool
+);
+
+registry.register(
+  {
+    name: "email.sendWithContext",
+    description: "Send a context-aware reply (approval required).",
+    paramsSchema: { email: "object", tone: "string", signOffName: "string", ragTopK: "number", ragModel: "string", sendTo: "string[]", cc: "string[]", bcc: "string[]" },
+    requiresApproval: true,
+    outbound: true,
+    riskLevel: "high",
+    humanSummary: params => `Send context-aware reply to ${params?.email?.from || "recipient"}`
+  },
+  sendWithContext
+);
+
+registry.register(
+  {
+    name: "spreadsheet.applyChanges",
+    description: "Create a draft spreadsheet patch and Google Doc.",
+    paramsSchema: { target: "object", changes: "object[]", draftOnly: "boolean" },
+    riskLevel: "medium"
+  },
+  applyChanges
+);
+
+registry.register(
+  {
+    name: "bi.snapshot",
+    description: "Record a KPI snapshot and emit watchtower event.",
+    paramsSchema: {
+      metric: "string",
+      value: "number",
+      rawInput: "object",
+      raw: "string",
+      watchItemId: "string",
+      watchTemplateId: "string",
+      thresholds: "object",
+      cadence: "string"
+    },
+    riskLevel: "low"
+  },
+  biSnapshot
+);
+
+registry.register(
+  {
+    name: "memory.write",
+    description: "Write to the memory vault (tiered).",
+    paramsSchema: { tier: "number", title: "string", content: "string", tags: "string[]", containsPHI: "boolean" },
+    riskLevel: "medium"
+  },
+  writeMemoryTool
+);
+
+registry.register(
+  {
+    name: "memory.search",
+    description: "Search memory vault by tier.",
+    paramsSchema: { tier: "number", query: "string", tags: "string[]", limit: "number" },
+    riskLevel: "medium"
+  },
+  searchMemoryTool
+);
+
+registry.register(
+  {
+    name: "memory.rotateKey",
+    description: "Rotate PHI encryption key (placeholder).",
+    paramsSchema: { confirm: "boolean" },
+    requiresApproval: true,
+    riskLevel: "high"
+  },
+  rotateKeyTool
+);
+
+registry.register(
+  {
+    name: "integrations.plexIdentity",
+    description: "Fetch Plex identity (local stub or real).",
+    paramsSchema: { mode: "string", token: "string" },
+    riskLevel: "low"
+  },
+  plexIdentity
+);
+
+registry.register(
+  {
+    name: "integrations.firefliesTranscripts",
+    description: "Fetch Fireflies transcripts list.",
+    paramsSchema: { mode: "string", limit: "number" },
+    riskLevel: "medium"
+  },
+  firefliesTranscripts
+);
+
+registry.register(
+  {
+    name: "weather.current",
+    description: "Get current weather for a location.",
+    paramsSchema: { location: "string" },
+    riskLevel: "low"
+  },
+  weatherCurrent
+);
+
+registry.register(
+  {
+    name: "web.search",
+    description: "Search the web and return top results.",
+    paramsSchema: { query: "string", limit: "number" },
+    riskLevel: "low"
+  },
+  webSearch
+);
+
+registry.register(
+  {
+    name: "shopping.productResearch",
+    description: "Deep product research with price comparison and recommendation.",
+    paramsSchema: { query: "string", budget: "number", limit: "number", context: "string" },
+    riskLevel: "medium"
+  },
+  shoppingProductResearch
+);
+
+registry.register(
+  {
+    name: "shopping.amazonAddToCart",
+    description: "Prepare an Amazon add-to-cart URL for an ASIN.",
+    paramsSchema: { asin: "string", quantity: "number" },
+    riskLevel: "medium"
+  },
+  shoppingAmazonAddToCart
+);
+
+registry.register(
+  {
+    name: "messaging.slackPost",
+    description: "Send a Slack message (approval required).",
+    paramsSchema: { channel: "string", message: "string" },
+    requiresApproval: true,
+    outbound: true,
+    riskLevel: "high",
+    outboundTargets: () => ["https://slack.com"]
+  },
+  slackPost
+);
+
+registry.register(
+  {
+    name: "messaging.telegramSend",
+    description: "Send a Telegram message (approval required).",
+    paramsSchema: { chatId: "string", message: "string" },
+    requiresApproval: true,
+    outbound: true,
+    riskLevel: "high",
+    outboundTargets: () => ["https://api.telegram.org"]
+  },
+  telegramSend
+);
+
+registry.register(
+  {
+    name: "messaging.discordSend",
+    description: "Send a Discord message (approval required).",
+    paramsSchema: { channelId: "string", message: "string" },
+    requiresApproval: true,
+    outbound: true,
+    riskLevel: "high",
+    outboundTargets: () => ["https://discord.com"]
+  },
+  discordSend
+);
+
+registry.register(
+  {
+    name: "system.modify",
+    description: "Run allowlisted system operations (restart, startup task).",
+    paramsSchema: { operation: "string" },
+    requiresApproval: true,
+    riskLevel: "high",
+    humanSummary: params => `System modify: ${params?.operation || "operation"}`
+  },
+  systemModify
+);
+
+registry.register(
+  {
+    name: "action.run",
+    description: "Run a browser action plan (headless).",
+    paramsSchema: {
+      taskName: "string",
+      startUrl: "string",
+      actions: "object[]",
+      safety: "object",
+      async: "boolean"
+    },
+    outbound: true,
+    riskLevel: "high",
+    outboundTargets: (params = {}) => {
+      const domains = extractDomainsFromPlan({ startUrl: params.startUrl, actions: params.actions });
+      return domains.map(domain => `https://${domain}`);
+    },
+    requiresApproval: (params = {}, context = {}) => {
+      const assessment = assessActionPlan({
+        taskName: params.taskName,
+        startUrl: params.startUrl,
+        actions: params.actions,
+        safety: params.safety,
+        workspaceId: context.workspaceId || "default"
+      });
+      return assessment.requiresApproval;
+    },
+    humanSummary: params => {
+      const assessment = assessActionPlan({ taskName: params?.taskName, startUrl: params?.startUrl, actions: params?.actions, safety: params?.safety, workspaceId: "default" });
+      const risks = assessment.riskTags?.length ? ` Risks: ${assessment.riskTags.join(", ")}` : "";
+      return `Run action plan: ${assessment.taskName || "Action Run"}.${risks}`;
+    }
+  },
+  actionRun
+);
+
+registry.register(
+  {
+    name: "desktop.run",
+    description: "Run a desktop action plan (local, Windows).",
+    paramsSchema: {
+      taskName: "string",
+      actions: "object[]",
+      safety: "object",
+      async: "boolean"
+    },
+    riskLevel: "high",
+    requiresApproval: (params = {}, context = {}) => {
+      const assessment = assessDesktopPlan({
+        taskName: params.taskName,
+        actions: params.actions,
+        safety: params.safety,
+        workspaceId: context.workspaceId || "default"
+      });
+      return assessment.requiresApproval;
+    },
+    humanSummary: params => {
+      const assessment = assessDesktopPlan({
+        taskName: params?.taskName,
+        actions: params?.actions,
+        safety: params?.safety,
+        workspaceId: "default"
+      });
+      const risks = assessment.riskTags?.length ? ` Risks: ${assessment.riskTags.join(", ")}` : "";
+      return `Run desktop plan: ${assessment.taskName || "Desktop Run"}.${risks}`;
+    }
+  },
+  desktopRun
+);
+
+registry.register(
+  {
+    name: "skill.vault.run",
+    description: "Run a local skill vault prompt.",
+    paramsSchema: { skillId: "string", input: "string" },
+    riskLevel: "medium",
+    requiresApproval: params => {
+      const check = assessSkillPermissions(params?.skillId);
+      return Boolean(check?.blockedTools?.length);
+    },
+    humanSummary: params => `Run skill vault: ${params?.skillId || "unknown"}`
+  },
+  skillVaultRun
+);
+
+const executor = new ToolExecutor(registry);
+
+export { registry, executor };

@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "thresholds": {
+    "minRecall": 0.6,
+    "minPrecision": 0.2,
+    "minTermCoverage": 0.5,
+    "maxMissing": 1
+  },
+  "queries": [
+    {
+      "id": "trading-recs-nvda",
+      "question": "In the Feb 17 recommendation run, what was the NVDA buy signal?",
+      "filters": {
+        "meetingIdPrefix": "trading:recommendations",
+        "titleContains": "2/17/2026"
+      },
+      "expected": {
+        "chunkIds": ["trading:recommendations:510a1861dfb9ea9e:0"],
+        "terms": ["NVDA", "BUY"]
+      },
+      "required": true,
+      "topK": 5,
+      "notes": "Anchored to the 2/17/2026 recommendation run chunk containing the NVDA signal."
+    },
+    {
+      "id": "memory-voice-sample",
+      "question": "What voice sample does Aika prefer?",
+      "filters": {
+        "meetingIdPrefix": "memory:",
+        "titleContains": "voice sample"
+      },
+      "expected": {
+        "terms": ["fem_aika.wav"]
+      },
+      "required": true,
+      "topK": 6,
+      "notes": "Ensures memory retrieval returns the preferred voice sample."
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+// UI smoke test (Playwright)
+// Usage: node scripts/ui_smoke.js
+const UI_BASE = process.env.UI_BASE_URL || "http://127.0.0.1:3000";
+const timeoutMs = Number(process.env.UI_SMOKE_TIMEOUT_MS || 45000);
+
+async function run() {
+  let chromium;
+  try {
+    ({ chromium } = require("@playwright/test"));
+  } catch (err) {
+    console.error("Playwright is not installed. Run: npm install");
+    process.exit(1);
+  }
+
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  page.setDefaultTimeout(timeoutMs);
+
+  try {
+    await page.goto(UI_BASE, { waitUntil: "networkidle" });
+
+    await page.waitForTimeout(1500);
+    const authLocator = page.getByText("Sign in to Aika").first();
+    const checkingLocator = page.getByText("Checking sign-in").first();
+    if (await authLocator.isVisible().catch(() => false)) {
+      console.log("UI smoke passed (auth gate shown).");
+      await browser.close();
+      return;
+    }
+    if (await checkingLocator.isVisible().catch(() => false)) {
+      await page.waitForTimeout(4000);
+      if (await authLocator.isVisible().catch(() => false)) {
+        console.log("UI smoke passed (auth gate shown).");
+        await browser.close();
+        return;
+      }
+    }
+
+    await page.getByRole("button", { name: "Chat", exact: true }).click();
+    await page.getByPlaceholder("Type your message...").waitFor();
+
+    await page.getByRole("button", { name: "Recordings", exact: true }).click();
+    await page.getByPlaceholder("Search recordings").waitFor();
+
+    await page.getByRole("button", { name: "Aika Tools", exact: true }).click();
+    await page.getByText("Aika Tools v1").waitFor();
+
+    await page.getByRole("button", { name: "Tools", exact: true }).click();
+    await page.getByText("MCP-lite Tools").waitFor();
+
+    await page.getByRole("button", { name: "Action Runner", exact: true }).click();
+    await page.getByText("Browser automation and desktop control with approvals.").waitFor();
+
+    await page.getByRole("button", { name: "Features", exact: true }).click();
+    await page.getByText("MCP Features").waitFor();
+
+    await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await page.getByText("Connect services for Aika's agent mode").waitFor();
+
+    await page.getByRole("button", { name: "Debug", exact: true }).click();
+    await page.getByText("System Status").waitFor();
+
+    await page.getByRole("button", { name: "Guide", exact: true }).click();
+    await page.getByText("Quickstart Guide + Demo Prompts").waitFor();
+
+    console.log("UI smoke passed.");
+  } catch (err) {
+    console.error(`UI smoke failed: ${err.message}`);
+    process.exitCode = 1;
+  } finally {
+    await browser.close();
+  }
+}
+
+run();
