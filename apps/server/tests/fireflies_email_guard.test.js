@@ -12,22 +12,21 @@ test.after(() => {
   }
 });
 
-test("fireflies email blocklist blocks default address", () => {
-  delete process.env.FIREFLIES_EMAIL_BLOCKLIST;
-  const { allowed, blocked } = filterFirefliesRecipients([
-    "jeff.barnes@inova.org",
-    "other@example.com"
-  ]);
-  assert.deepEqual(allowed, ["other@example.com"]);
-  assert.deepEqual(blocked, ["jeff.barnes@inova.org"]);
-});
-
-test("fireflies email blocklist respects env list", () => {
+test("fireflies email blocklist blocks configured address", () => {
   process.env.FIREFLIES_EMAIL_BLOCKLIST = "blocked@example.com";
   const { allowed, blocked } = filterFirefliesRecipients([
     "blocked@example.com",
+    "other@example.com"
+  ]);
+  assert.deepEqual(allowed, ["other@example.com"]);
+  assert.deepEqual(blocked, ["blocked@example.com"]);
+});
+
+test("fireflies email blocklist empty allows recipients", () => {
+  delete process.env.FIREFLIES_EMAIL_BLOCKLIST;
+  const { allowed, blocked } = filterFirefliesRecipients([
     "ok@example.com"
   ]);
   assert.deepEqual(allowed, ["ok@example.com"]);
-  assert.deepEqual(blocked, ["blocked@example.com"]);
+  assert.deepEqual(blocked, []);
 });

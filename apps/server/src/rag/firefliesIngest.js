@@ -31,7 +31,7 @@ let syncStartedAt = 0;
 let lastSyncResult = null;
 
 const DEFAULT_SYNC_STALE_MS = 30 * 60 * 1000;
-const DEFAULT_FIREFLIES_EMAIL_BLOCKLIST = ["jeff.barnes@inova.org"];
+const DEFAULT_FIREFLIES_EMAIL_BLOCKLIST = [];
 
 function getSyncStaleMs() {
   const raw = Number(process.env.FIREFLIES_SYNC_STALE_MS || DEFAULT_SYNC_STALE_MS);
