@@ -339,6 +339,15 @@ export function completeTodoRecord({ id, userId = "local", completedAt = null })
   return normalizeTodoRow(row, userId);
 }
 
+export function deleteTodoRecord({ id, userId = "local" }) {
+  if (!id) throw new Error("todo_id_required");
+  const db = getDb();
+  const row = db.prepare("SELECT * FROM todos WHERE id = ? AND user_id = ?").get(id, userId);
+  if (!row) throw new Error("todo_not_found");
+  db.prepare("DELETE FROM todos WHERE id = ? AND user_id = ?").run(id, userId);
+  return normalizeTodoRow(row, userId);
+}
+
 export function getTodoRecord({ id, userId = "local" }) {
   if (!id) return null;
   const db = getDb();
@@ -348,7 +357,7 @@ export function getTodoRecord({ id, userId = "local" }) {
 
 export function listTodosRecord({
   status = "open",
-  dueWithinDays = 14,
+  dueWithinDays = null,
   tag = null,
   listId = null,
   query = "",

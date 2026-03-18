@@ -1,0 +1,4928 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fireflies RAG Workspace</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #06101d;
+      --bg-soft: #0a1729;
+      --panel: #0f213a;
+      --panel-2: #122a48;
+      --text: #e9f2ff;
+      --muted: #9fb3d6;
+      --accent: #60a5fa;
+      --accent-2: #14b8a6;
+      --border: #244268;
+      --danger: #f87171;
+      --warn: #f59e0b;
+      --ok: #34d399;
+      --shadow: 0 18px 36px rgba(2, 8, 23, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1300px 700px at 10% -12%, #1d4f8d 0%, transparent 60%),
+        radial-gradient(1200px 720px at 90% -15%, #0f766e 0%, transparent 58%),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      width: min(100%, 1920px);
+      max-width: none;
+      margin: 0 auto;
+      padding: clamp(12px, 1.6vw, 24px);
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, black), color-mix(in srgb, var(--panel-2) 78%, black));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      display: grid;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      align-self: start;
+      backdrop-filter: blur(8px);
+    }
+
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      letter-spacing: 0.01em;
+    }
+
+    h2 {
+      font-size: 1.05rem;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    h3 {
+      font-size: 0.95rem;
+      color: #cce0ff;
+      margin-bottom: 6px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .danger {
+      color: var(--danger);
+    }
+
+    .ok {
+      color: var(--ok);
+    }
+
+    .tabs {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--bg-soft) 86%, black);
+      padding: 4px;
+      gap: 4px;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      flex-wrap: nowrap;
+      scrollbar-width: thin;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .tab-btn {
+      border-radius: 999px;
+      border: 1px solid transparent;
+      padding: 8px 14px;
+      background: transparent;
+      color: #d7e8ff;
+      cursor: pointer;
+      font-weight: 600;
+      flex: 0 0 auto;
+    }
+
+    .tab-btn.active {
+      background: #174780;
+      border-color: #2f6aac;
+    }
+
+    .panel {
+      display: none;
+      gap: 12px;
+    }
+
+    .panel.active {
+      display: grid;
+    }
+
+    .panel-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid #2e4d77;
+      border-radius: 12px;
+      background: #0d2037;
+      padding: 8px;
+    }
+
+    .panel-tab-btn {
+      border-radius: 999px;
+      border: 1px solid #3e5e8a;
+      padding: 6px 10px;
+      background: #12355e;
+      color: #dcecff;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+
+    .panel-tab-btn.active {
+      background: #1a4b80;
+      border-color: #6ea4e8;
+      color: #f2f8ff;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    label {
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+      font: inherit;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      background: #0a1a2e;
+      padding: 9px 11px;
+    }
+
+    input,
+    select,
+    textarea {
+      min-height: 38px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      background: #133861;
+      border-color: #2e5f98;
+    }
+
+    button:hover {
+      background: #1a4f85;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .ghost {
+      background: transparent;
+      border-color: #3a5479;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 2px 9px;
+      font-size: 0.74rem;
+      border: 1px solid #385a86;
+      color: #d2e6ff;
+      background: #14345b;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pill.high {
+      border-color: #8b2f46;
+      background: #4e1f2f;
+      color: #ffd5de;
+    }
+
+    .pill.medium {
+      border-color: #7f5a1f;
+      background: #4f3a12;
+      color: #ffe3ae;
+    }
+
+    .pill.low {
+      border-color: #1f6d60;
+      background: #0f463e;
+      color: #bff7ec;
+    }
+
+    .pill.filter-chip {
+      cursor: pointer;
+    }
+
+    .pill.filter-chip:hover {
+      border-color: #6ea4e8;
+      background: #1a436f;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      margin: 0;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #20385a;
+      background: #081427;
+      max-height: 360px;
+      overflow: auto;
+    }
+
+    #firefliesAnswer {
+      min-height: 120px;
+    }
+
+    #firefliesCitations {
+      margin: 8px 0 0;
+      padding-left: 18px;
+    }
+
+    #firefliesCitations li {
+      margin-bottom: 6px;
+      color: #cbdaf3;
+      font-size: 0.88rem;
+    }
+
+    .task-controls {
+      display: grid;
+      gap: 10px;
+    }
+
+    .task-grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    }
+
+    .filter-head-row {
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .filter-head-row h2 {
+      margin-bottom: 0;
+    }
+
+    .filter-field {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .filter-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .filter-clear-btn {
+      width: 24px;
+      min-width: 24px;
+      height: 24px;
+      min-height: 24px;
+      padding: 0;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #c7dcfa;
+    }
+
+    .inline-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      white-space: nowrap;
+    }
+
+    .inline-toggle input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      min-height: 16px;
+      padding: 0;
+      margin: 0;
+    }
+
+    .task-grid input,
+    .task-grid select {
+      width: 100%;
+    }
+
+    .task-board {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      align-items: stretch;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 14px 10px 10px;
+      margin-top: 8px;
+      border: 1px solid #2b4469;
+      border-radius: 14px;
+      background: color-mix(in srgb, #0d1f36 88%, black);
+      scrollbar-gutter: stable both-edges;
+      min-height: 280px;
+    }
+
+    .task-board::after {
+      content: "";
+      flex: 0 0 2px;
+    }
+
+    .task-lane {
+      border: 1px solid #2d486f;
+      border-radius: 13px;
+      background: color-mix(in srgb, #102644 82%, black);
+      min-height: 260px;
+      min-width: clamp(300px, 24vw, 390px);
+      width: clamp(300px, 24vw, 390px);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      transition: border-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+    }
+
+    .task-lane.reorderable {
+      cursor: grab;
+    }
+
+    .task-lane.reorderable:active {
+      cursor: grabbing;
+    }
+
+    .task-lane.dragging-column {
+      opacity: 0.6;
+      border-color: #67a8ff;
+    }
+
+    .task-lane.column-drop-target {
+      border-color: #7db5ff;
+      box-shadow: 0 0 0 1px rgba(125, 181, 255, 0.45) inset;
+    }
+
+    .task-lane-head {
+      padding: 10px 12px;
+      border-bottom: 1px solid #2b4469;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .lane-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 0.92rem;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .lane-label {
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .lane-drag-handle {
+      color: #9fc3f3;
+      font-size: 0.82rem;
+      border: 1px solid #3b5e8a;
+      border-radius: 999px;
+      padding: 2px 7px;
+      background: #122b49;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    .lane-head-tools {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+      min-width: 0;
+    }
+
+    .lane-sort-select {
+      min-height: 28px;
+      height: 28px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #3b5e8a;
+      background: #102845;
+      color: #d2e6ff;
+      font-size: 0.76rem;
+      max-width: 132px;
+    }
+
+    .lane-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      flex: 0 0 auto;
+    }
+
+    .task-lane-body {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      padding: 8px;
+      min-height: 120px;
+      max-height: 64vh;
+      overflow-y: auto;
+    }
+
+    .task-lane-body.drag-over {
+      outline: 1px dashed #7db5ff;
+      outline-offset: -4px;
+    }
+
+    .task-card {
+      border: 1px solid #325b8d;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #14335b, #102946);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      cursor: pointer;
+      width: 100%;
+      flex: 0 0 auto;
+      min-width: 0;
+      min-height: 112px;
+      overflow: visible;
+    }
+
+    .task-card.dragging {
+      opacity: 0.5;
+    }
+
+    .task-card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.3;
+      color: #ebf3ff;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .task-card-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: #b4c9ea;
+      flex-wrap: wrap;
+    }
+
+    .task-card-meta span {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .task-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .task-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .task-actions button {
+      padding: 6px 9px;
+      font-size: 0.79rem;
+    }
+
+    .done-section {
+      border-top: 1px dashed #476089;
+      margin-top: 10px;
+      padding-top: 8px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .done-section summary {
+      cursor: pointer;
+      color: #c6d3e8;
+      font-size: 0.82rem;
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .done-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .task-card.done-card {
+      border-color: #5b677c;
+      background: linear-gradient(180deg, #556172, #4a5567);
+      color: #e3e8ef;
+    }
+
+    .task-card.done-card .task-card-title {
+      color: #eef2f7;
+    }
+
+    .task-card.done-card .task-card-meta {
+      color: #d6dde7;
+    }
+
+    .task-card.done-card .pill {
+      border-color: #7d8697;
+      background: #606a7b;
+      color: #f4f6f9;
+    }
+
+    .empty {
+      color: #9db4d6;
+      font-size: 0.88rem;
+      padding: 8px;
+    }
+
+    .palette {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .palette-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      border: 1px solid #425c80;
+      padding: 4px 8px;
+      font-size: 0.77rem;
+      background: #0f223c;
+      color: #dbeaff;
+    }
+
+    .palette-item.toggle {
+      cursor: pointer;
+    }
+
+    .palette-item.toggle.active {
+      border-color: #7db5ff;
+      background: #1b3c63;
+      box-shadow: 0 0 0 1px rgba(125, 181, 255, 0.25) inset;
+    }
+
+    .palette-item .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      flex: 0 0 auto;
+    }
+
+    .palette-item button {
+      border-radius: 999px;
+      border-color: #4f668b;
+      padding: 2px 7px;
+      font-size: 0.72rem;
+      background: transparent;
+      color: #cbdfff;
+    }
+
+    .meetings-workbench {
+      display: grid;
+      gap: 12px;
+    }
+
+    .meetings-layout {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: minmax(240px, 300px) minmax(0, 1.35fr) minmax(280px, 1fr);
+      align-items: stretch;
+      min-height: 58vh;
+    }
+
+    .meetings-list-pane,
+    .meetings-detail-pane,
+    .meetings-actions-pane {
+      border: 1px solid #2e4b75;
+      border-radius: 13px;
+      background: linear-gradient(180deg, #102641, #0d2138);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    .meetings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      max-height: calc(58vh - 32px);
+      padding-right: 2px;
+    }
+
+    .meetings-open-list,
+    .meetings-reviewed-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .meeting-item {
+      border: 1px solid #385c8a;
+      border-radius: 11px;
+      background: #123157;
+      color: #e6f1ff;
+      text-align: left;
+      padding: 9px;
+      display: grid;
+      gap: 5px;
+      cursor: pointer;
+    }
+
+    .meeting-item.active {
+      border-color: #7db5ff;
+      box-shadow: 0 0 0 1px rgba(125, 181, 255, 0.3) inset;
+      background: #1a416f;
+    }
+
+    .meeting-item.reviewed {
+      border-color: #606d82;
+      background: linear-gradient(180deg, #5a6779, #4e596a);
+      color: #e5ebf4;
+    }
+
+    .meeting-item.reviewed .meeting-item-title {
+      color: #f4f7fb;
+    }
+
+    .meeting-item.reviewed .meeting-item-meta {
+      color: #d2dbe8;
+    }
+
+    .meeting-item-title {
+      font-size: 0.89rem;
+      font-weight: 700;
+      line-height: 1.3;
+      color: #ebf3ff;
+      overflow-wrap: anywhere;
+    }
+
+    .meeting-item-meta {
+      font-size: 0.78rem;
+      color: #b6cae9;
+    }
+
+    .meeting-reviewed-section {
+      border-top: 1px dashed #60748f;
+      margin-top: 4px;
+      padding-top: 8px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .meeting-reviewed-section summary {
+      cursor: pointer;
+      color: #c8d8ee;
+      font-size: 0.82rem;
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .meetings-detail-head {
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .meetings-review-controls {
+      justify-content: flex-end;
+      flex: 1 1 auto;
+    }
+
+    .meeting-summary-scroll,
+    .meeting-actions-scroll {
+      overflow-y: auto;
+      max-height: calc(58vh - 32px);
+      display: grid;
+      gap: 10px;
+      padding-right: 2px;
+    }
+
+    .meeting-summary-block {
+      border: 1px solid #2e4d77;
+      border-radius: 11px;
+      padding: 10px;
+      background: #0b1c31;
+      display: grid;
+      gap: 6px;
+    }
+
+    .meeting-summary-block ul {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 4px;
+      color: #d7e8ff;
+      font-size: 0.86rem;
+    }
+
+    .meeting-action-card {
+      border: 1px solid #325b8d;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #14335b, #102946);
+      padding: 9px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .meeting-action-head {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .meeting-action-head input[type="checkbox"] {
+      margin-top: 3px;
+      width: 16px;
+      height: 16px;
+      min-height: 16px;
+    }
+
+    .meeting-action-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      line-height: 1.25;
+      color: #eef5ff;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .meeting-action-notes {
+      font-size: 0.8rem;
+      color: #bed2f1;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .graph-workbench {
+      display: grid;
+      gap: 12px;
+    }
+
+    .graph-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: end;
+      border: 1px solid #2e4d77;
+      border-radius: 12px;
+      padding: 10px;
+      background: #0d2037;
+    }
+
+    .graph-toolbar .field {
+      display: grid;
+      gap: 4px;
+      min-width: 120px;
+      flex: 1 1 140px;
+    }
+
+    .graph-toolbar .field.compact {
+      flex: 0 0 110px;
+      min-width: 95px;
+    }
+
+    .graph-layout {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.9fr);
+      align-items: stretch;
+      min-height: 66vh;
+    }
+
+    .graph-canvas-pane {
+      border: 1px solid #2e4b75;
+      border-radius: 13px;
+      background: linear-gradient(180deg, #102641, #0d2138);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    .graph-canvas-wrap {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #2a486f;
+      background:
+        radial-gradient(800px 500px at 15% 5%, rgba(96, 165, 250, 0.12), transparent 58%),
+        radial-gradient(900px 550px at 85% 5%, rgba(20, 184, 166, 0.1), transparent 62%),
+        #071426;
+      min-height: 56vh;
+      height: 100%;
+    }
+
+    #knowledgeGraphCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+
+    .graph-canvas-wrap.dragging #knowledgeGraphCanvas {
+      cursor: grabbing;
+    }
+
+    .graph-empty {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      color: #a8bedf;
+      font-size: 0.92rem;
+      pointer-events: none;
+      background: rgba(4, 11, 21, 0.45);
+      text-align: center;
+      padding: 12px;
+    }
+
+    .graph-empty.show {
+      display: grid;
+    }
+
+    .graph-side-pane {
+      border: 1px solid #2e4b75;
+      border-radius: 13px;
+      background: linear-gradient(180deg, #102641, #0d2138);
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+      overflow: auto;
+      min-height: 0;
+      max-height: 66vh;
+    }
+
+    .graph-card {
+      border: 1px solid #2e4d77;
+      border-radius: 11px;
+      background: #0b1c31;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .graph-meta-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .graph-meta-item {
+      border: 1px solid #31547f;
+      border-radius: 9px;
+      padding: 7px 8px;
+      background: #0f2744;
+      display: grid;
+      gap: 2px;
+    }
+
+    .graph-meta-item .k {
+      font-size: 0.73rem;
+      color: #9eb7dc;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .graph-meta-item .v {
+      font-size: 0.84rem;
+      color: #e7f1ff;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.3;
+    }
+
+    .graph-decision-tree {
+      display: grid;
+      gap: 8px;
+    }
+
+    .graph-decision-group {
+      border: 1px solid #335684;
+      border-radius: 9px;
+      background: #0d243f;
+      padding: 8px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .graph-decision-title {
+      font-size: 0.78rem;
+      color: #bcd3f3;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+    }
+
+    .graph-decision-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .graph-decision-btn {
+      border-radius: 999px;
+      border: 1px solid #45628a;
+      background: #12325a;
+      color: #deecff;
+      padding: 4px 9px;
+      font-size: 0.76rem;
+      line-height: 1.2;
+      cursor: pointer;
+      max-width: 100%;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .graph-decision-btn:hover {
+      background: #1a4474;
+      border-color: #628ec2;
+    }
+
+    .graph-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .graph-legend .pill {
+      font-size: 0.75rem;
+    }
+
+    .graph-count-pill {
+      font-size: 0.77rem;
+      color: #c8dbf7;
+      border: 1px solid #48658f;
+      border-radius: 999px;
+      padding: 3px 9px;
+      background: #113257;
+      width: fit-content;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 8, 23, 0.72);
+      display: none;
+      z-index: 30;
+      padding: 24px;
+      overflow: auto;
+    }
+
+    .modal-backdrop.open {
+      display: block;
+    }
+
+    .modal {
+      max-width: 900px;
+      margin: 0 auto;
+      border-radius: 16px;
+      border: 1px solid #36567f;
+      background: linear-gradient(180deg, #10253f, #0f2138);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 860px) {
+      .modal-grid.two {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .modal-grid.two .span-two {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .modal textarea {
+      min-height: 96px;
+    }
+
+    .modal input,
+    .modal select {
+      width: 100%;
+    }
+
+    .task-title-field {
+      min-height: 56px !important;
+      resize: vertical;
+    }
+
+    .ctx-block {
+      border: 1px solid #2e4d77;
+      border-radius: 12px;
+      padding: 10px;
+      background: #0b1b30;
+      display: grid;
+      gap: 8px;
+    }
+
+    .ctx-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .ctx-links a,
+    .ctx-links button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      border: 1px solid #476289;
+      padding: 6px 10px;
+      text-decoration: none;
+      color: #d7e8ff;
+      background: #122b49;
+      font-size: 0.82rem;
+    }
+
+    .ctx-links a:hover,
+    .ctx-links button:hover {
+      background: #1a4171;
+    }
+
+    @media (max-width: 680px) {
+      .wrap {
+        padding: 14px;
+      }
+
+      .hero {
+        top: 0;
+      }
+
+      .hero-top {
+        align-items: stretch;
+      }
+
+      .tabs {
+        width: 100%;
+      }
+
+      .modal-backdrop {
+        padding: 10px;
+      }
+
+      .task-lane {
+        min-width: 85vw;
+        width: 85vw;
+      }
+
+      .meetings-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .meetings-list,
+      .meeting-summary-scroll,
+      .meeting-actions-scroll {
+        max-height: 38vh;
+      }
+
+      .graph-layout {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+
+      .graph-canvas-wrap {
+        min-height: 54vh;
+      }
+
+      .graph-side-pane {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card hero">
+      <div class="hero-top">
+        <div>
+          <h1>Fireflies RAG Workspace</h1>
+          <p class="muted" id="configLine">Loading config...</p>
+          <p class="muted" id="overviewLine">Loading refresh/depth metrics...</p>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Workspace tabs">
+          <button class="tab-btn" id="tabBtnFireflies" data-tab="fireflies" role="tab" aria-selected="true">RAG Q&A</button>
+          <button class="tab-btn" id="tabBtnMeetings" data-tab="meetings" role="tab" aria-selected="false">Meetings</button>
+          <button class="tab-btn" id="tabBtnTasks" data-tab="tasks" role="tab" aria-selected="false">To-Do</button>
+          <button class="tab-btn" id="tabBtnGraph" data-tab="graph" role="tab" aria-selected="false">Knowledge Graph</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel active" id="panel-fireflies">
+      <div class="panel-nav" role="navigation" aria-label="Tab navigation">
+        <button type="button" class="panel-tab-btn" data-tab="fireflies">RAG Q&A</button>
+        <button type="button" class="panel-tab-btn" data-tab="meetings">Meetings</button>
+        <button type="button" class="panel-tab-btn" data-tab="tasks">To-Do</button>
+        <button type="button" class="panel-tab-btn" data-tab="graph">Knowledge Graph</button>
+      </div>
+      <section class="card">
+        <h2>Sync Fireflies</h2>
+        <div class="row">
+          <label for="syncLimit">Limit</label>
+          <input id="syncLimit" type="number" min="0" value="0">
+          <label for="syncForce">Force reindex</label>
+          <input id="syncForce" type="checkbox">
+          <button id="syncBtn">Run Sync</button>
+          <button id="catchupBtn">Catch Up All Missing</button>
+          <button id="refreshStatusBtn" class="ghost">Refresh Status</button>
+        </div>
+        <p class="muted">Set limit to <strong>0</strong> for full history catch-up (no cap).</p>
+        <p class="muted" id="syncMessage"></p>
+      </section>
+
+      <section class="card">
+        <h2>Ask RAG (LLM)</h2>
+        <textarea id="firefliesQuestion" placeholder="Ask a question about your synced Fireflies meetings..."></textarea>
+        <div class="row">
+          <label for="firefliesTopK">Top K</label>
+          <input id="firefliesTopK" type="number" min="1" max="30" value="8">
+          <button id="askBtn">Ask</button>
+          <button id="copyBtn" class="ghost" disabled>Copy for OneNote</button>
+        </div>
+        <p class="muted" id="askMessage"></p>
+        <p class="muted" id="copyMessage"></p>
+        <pre id="firefliesAnswer"></pre>
+        <ul id="firefliesCitations"></ul>
+      </section>
+    </section>
+
+    <section class="panel" id="panel-meetings">
+      <div class="panel-nav" role="navigation" aria-label="Tab navigation">
+        <button type="button" class="panel-tab-btn" data-tab="fireflies">RAG Q&A</button>
+        <button type="button" class="panel-tab-btn" data-tab="meetings">Meetings</button>
+        <button type="button" class="panel-tab-btn" data-tab="tasks">To-Do</button>
+        <button type="button" class="panel-tab-btn" data-tab="graph">Knowledge Graph</button>
+      </div>
+      <section class="card meetings-workbench">
+        <div class="row filter-head-row">
+          <h2>Meeting Review & Curated To-Dos</h2>
+          <div class="row">
+            <button id="meetingsRefreshBtn" class="ghost">Refresh Meetings</button>
+            <button id="meetingsImportBtn">Import To-Dos</button>
+          </div>
+        </div>
+        <p class="muted" id="meetingsMessage">Loading meetings...</p>
+        <div class="meetings-layout">
+          <div class="meetings-list-pane">
+            <h3>Meetings</h3>
+            <div class="meetings-list" id="meetingsList"></div>
+          </div>
+          <div class="meetings-detail-pane">
+            <div class="row meetings-detail-head">
+              <h3 id="meetingDetailTitle">Select a meeting</h3>
+              <div class="row meetings-review-controls">
+                <button id="meetingMarkReviewedBtn" type="button" class="ghost" disabled>Mark Reviewed</button>
+                <button id="meetingMarkUnreviewedBtn" type="button" class="ghost" disabled>Mark Unreviewed</button>
+              </div>
+            </div>
+            <p class="muted" id="meetingDetailMeta">Meeting summary and context appear here.</p>
+            <div class="meeting-summary-scroll" id="meetingSummaryBlocks"></div>
+          </div>
+          <div class="meetings-actions-pane">
+            <h3>Action Items / To-Dos</h3>
+            <p class="muted" id="meetingActionStats">0 selected</p>
+            <div class="meeting-actions-scroll" id="meetingActionsList"></div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel" id="panel-graph">
+      <div class="panel-nav" role="navigation" aria-label="Tab navigation">
+        <button type="button" class="panel-tab-btn" data-tab="fireflies">RAG Q&A</button>
+        <button type="button" class="panel-tab-btn" data-tab="meetings">Meetings</button>
+        <button type="button" class="panel-tab-btn" data-tab="tasks">To-Do</button>
+        <button type="button" class="panel-tab-btn" data-tab="graph">Knowledge Graph</button>
+      </div>
+      <section class="card graph-workbench">
+        <div class="row filter-head-row">
+          <h2>Knowledge Graph Explorer</h2>
+          <div class="row">
+            <button id="graphRefreshBtn" class="ghost">Refresh Graph</button>
+            <button id="graphRelayoutBtn" class="ghost">Re-Layout</button>
+            <button id="graphResetViewBtn" class="ghost">Reset View</button>
+          </div>
+        </div>
+        <p class="muted" id="graphMessage">Loading graph...</p>
+        <div class="graph-toolbar">
+          <div class="field">
+            <label for="graphNodeTypeFilter">Node Filter</label>
+            <select id="graphNodeTypeFilter">
+              <option value="all">All nodes</option>
+              <option value="meeting">Meetings focus</option>
+              <option value="action">Action items focus</option>
+              <option value="person">People focus</option>
+              <option value="topic">Topics focus</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="graphSearch">Search nodes</label>
+            <input id="graphSearch" type="text" placeholder="meeting, owner, topic">
+          </div>
+          <div class="field compact">
+            <label for="graphMeetingLimit">Meetings</label>
+            <input id="graphMeetingLimit" type="number" min="20" max="800" step="10" value="40">
+          </div>
+          <div class="field compact">
+            <label for="graphActionsLimit">Actions / Meeting</label>
+            <input id="graphActionsLimit" type="number" min="1" max="30" value="5">
+          </div>
+          <div class="field compact">
+            <label for="graphTopicsLimit">Topics / Meeting</label>
+            <input id="graphTopicsLimit" type="number" min="1" max="20" value="4">
+          </div>
+        </div>
+        <div class="graph-layout">
+          <div class="graph-canvas-pane">
+            <div class="row">
+              <span class="graph-count-pill" id="graphCountsLine">Nodes 0 | Links 0</span>
+              <span class="muted" id="graphHoverHint">Drag to pan, scroll to zoom, click nodes/links for details.</span>
+            </div>
+            <div class="graph-canvas-wrap" id="graphCanvasWrap">
+              <canvas id="knowledgeGraphCanvas"></canvas>
+              <div class="graph-empty" id="graphEmptyState">No graph data available yet. Sync Fireflies first.</div>
+            </div>
+          </div>
+          <aside class="graph-side-pane">
+            <section class="graph-card">
+              <h3>Knowledge Decision Tree</h3>
+              <p class="muted" id="graphDecisionHint">Select a node to see related navigation paths.</p>
+              <div class="graph-decision-tree" id="graphDecisionTree"></div>
+            </section>
+            <section class="graph-card">
+              <h3>Selection Details</h3>
+              <p class="muted" id="graphSelectionHint">Click a node or link on the graph canvas.</p>
+              <div class="graph-meta-list" id="graphSelectionMeta"></div>
+            </section>
+            <section class="graph-card">
+              <h3>Legend</h3>
+              <div class="graph-legend">
+                <span class="pill">Meeting</span>
+                <span class="pill" style="background:#123f34;border-color:#1b7f66;">Action</span>
+                <span class="pill" style="background:#3e2c16;border-color:#b77f1b;">Person</span>
+                <span class="pill" style="background:#2f2356;border-color:#7c5cf0;">Topic</span>
+              </div>
+              <p class="muted">Decision tree shows strongest connected paths from your current node.</p>
+            </section>
+          </aside>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel" id="panel-tasks">
+      <div class="panel-nav" role="navigation" aria-label="Tab navigation">
+        <button type="button" class="panel-tab-btn" data-tab="fireflies">RAG Q&A</button>
+        <button type="button" class="panel-tab-btn" data-tab="meetings">Meetings</button>
+        <button type="button" class="panel-tab-btn" data-tab="tasks">To-Do</button>
+        <button type="button" class="panel-tab-btn" data-tab="graph">Knowledge Graph</button>
+      </div>
+      <section class="card task-controls">
+        <h2>Tasks Command Bar</h2>
+        <div class="row">
+          <button id="todoRefreshBtn">Refresh Tasks</button>
+          <button id="todoImportBtn">Import From Meetings</button>
+          <button id="todoImportNotionLocalBtn" class="ghost">Import Notion File</button>
+          <button id="todoAutoKanbanBtn">Auto Organize Kanban (Priority Guess)</button>
+          <button id="todoQuickAddColumnBtn" class="ghost">Quick Add Column</button>
+          <button id="todoNewTaskBtn" class="ghost">New Task Card</button>
+        </div>
+        <input id="todoImportNotionLocalFile" type="file" accept=".json,.csv,.txt,application/json,text/csv,text/plain" style="display:none;">
+        <p class="muted" id="todoMessage"></p>
+      </section>
+
+      <section class="card">
+        <div class="row filter-head-row">
+          <h2>Kanban Filters & Sort</h2>
+          <div class="row">
+            <label class="inline-toggle" for="taskShowHiddenOlderToggle">
+              <input id="taskShowHiddenOlderToggle" type="checkbox">
+              Show older tasks
+            </label>
+            <button id="clearTaskFiltersBtn" class="ghost" type="button">Clear Filters</button>
+          </div>
+        </div>
+        <p class="muted" id="taskWindowHintLine"></p>
+        <div class="task-grid">
+          <div class="filter-field">
+            <div class="filter-label-row">
+              <label for="taskStatusFilter">Status</label>
+              <button id="clearTaskStatusFilterBtn" class="ghost filter-clear-btn" type="button" aria-label="Clear status filter" title="Clear status filter">x</button>
+            </div>
+            <select id="taskStatusFilter">
+              <option value="open">Open</option>
+              <option value="all">All</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <div class="filter-label-row">
+              <label for="taskCategoryFilter">Column</label>
+              <button id="clearTaskCategoryFilterBtn" class="ghost filter-clear-btn" type="button" aria-label="Clear column filter" title="Clear column filter">x</button>
+            </div>
+            <select id="taskCategoryFilter"></select>
+          </div>
+          <div class="filter-field">
+            <div class="filter-label-row">
+              <label for="taskPriorityFilter">Priority</label>
+              <button id="clearTaskPriorityFilterBtn" class="ghost filter-clear-btn" type="button" aria-label="Clear priority filter" title="Clear priority filter">x</button>
+            </div>
+            <select id="taskPriorityFilter">
+              <option value="all">All priorities</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <div class="filter-label-row">
+              <label for="taskTagFilter">Category</label>
+              <button id="clearTaskTagFilterBtn" class="ghost filter-clear-btn" type="button" aria-label="Clear category filter" title="Clear category filter">x</button>
+            </div>
+            <input id="taskTagFilter" type="text" placeholder="category name">
+          </div>
+          <div class="filter-field">
+            <div class="filter-label-row">
+              <label for="taskSearch">Search</label>
+              <button id="clearTaskSearchFilterBtn" class="ghost filter-clear-btn" type="button" aria-label="Clear search filter" title="Clear search filter">x</button>
+            </div>
+            <input id="taskSearch" type="text" placeholder="title, details, notes">
+          </div>
+          <div class="filter-field">
+            <div class="filter-label-row">
+              <label for="taskSortBy">Sort by</label>
+              <button id="clearTaskSortByFilterBtn" class="ghost filter-clear-btn" type="button" aria-label="Clear sort filter" title="Clear sort filter">x</button>
+            </div>
+            <select id="taskSortBy">
+              <option value="newest">Newest first</option>
+              <option value="manual">Manual (drag order)</option>
+              <option value="meeting_date_asc">Meeting Date (A-Z)</option>
+              <option value="meeting_date_desc">Meeting Date (Z-A)</option>
+              <option value="priority">Priority</option>
+              <option value="due">Due date</option>
+              <option value="title">Title</option>
+              <option value="updated">Last updated</option>
+            </select>
+          </div>
+        </div>
+        <p class="muted" id="taskStatsLine"></p>
+      </section>
+
+      <section class="card">
+        <h2>Column Manager</h2>
+        <div class="task-grid">
+          <div>
+            <label for="newCategoryName">New column</label>
+            <input id="newCategoryName" type="text" placeholder="e.g., Waiting on Vendor">
+          </div>
+          <div>
+            <label for="newCategoryColor">Color</label>
+            <input id="newCategoryColor" type="color" value="#22c55e">
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="createCategoryBtn">Create Column</button>
+          </div>
+          <div>
+            <label for="manageCategorySelect">Edit column color</label>
+            <select id="manageCategorySelect"></select>
+          </div>
+          <div>
+            <label for="manageCategoryColor">Updated color</label>
+            <input id="manageCategoryColor" type="color" value="#22c55e">
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="updateCategoryColorBtn" class="ghost">Update Color</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Categories (Color Labels)</h2>
+        <div class="task-grid">
+          <div>
+            <label for="tagNameInput">Category name</label>
+            <input id="tagNameInput" type="text" placeholder="e.g., Blocker">
+          </div>
+          <div>
+            <label for="tagColorInput">Category color</label>
+            <input id="tagColorInput" type="color" value="#3b82f6">
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="addTagColorBtn">Save Category Color</button>
+          </div>
+        </div>
+        <div class="palette" id="tagPalette"></div>
+      </section>
+
+      <section class="card">
+        <h2>Kanban Board</h2>
+        <p class="muted">Drag cards between columns to reprioritize and reorganize. Unknown tasks stay in Backlog / To Be Processed. Moves are auto-saved.</p>
+        <div class="task-board" id="taskBoard"></div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="taskModalBackdrop" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="taskModalTitle">Task Details</h2>
+          <p class="muted" id="taskModalSubtitle">Create or edit a task card.</p>
+        </div>
+        <button id="closeTaskModalBtn" class="ghost">Close</button>
+      </div>
+      <div class="row">
+        <button id="taskPrevBtn" class="ghost">Up</button>
+        <button id="taskNextBtn" class="ghost">Down</button>
+        <span class="muted" id="taskNavStatus">0 of 0</span>
+      </div>
+      <div class="modal-grid two">
+        <div class="span-two">
+          <label for="taskFormTitle">Title</label>
+          <textarea id="taskFormTitle" class="task-title-field" rows="2" placeholder="Task title"></textarea>
+        </div>
+        <div>
+          <label for="taskFormCategory">Column</label>
+          <select id="taskFormCategory"></select>
+        </div>
+        <div>
+          <label for="taskFormPriority">Priority</label>
+          <select id="taskFormPriority">
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div>
+          <label for="taskFormDue">Due</label>
+          <input id="taskFormDue" type="datetime-local">
+        </div>
+        <div>
+          <label for="taskFormReminder">Reminder</label>
+          <input id="taskFormReminder" type="datetime-local">
+        </div>
+        <div>
+          <label for="taskFormRepeat">Repeat</label>
+          <input id="taskFormRepeat" type="text" placeholder="daily, weekly, monthly">
+        </div>
+      </div>
+      <div>
+        <label for="taskFormTags">Categories (comma-separated)</label>
+        <input id="taskFormTags" type="text" placeholder="owner:jeff, blocker, follow-up">
+        <p class="muted">Click category chips below to add/remove on this task.</p>
+        <div class="palette" id="taskModalTagPalette"></div>
+      </div>
+      <div class="modal-grid two">
+        <div>
+          <label for="taskFormSubtasks">Subtasks (one per line)</label>
+          <textarea id="taskFormSubtasks" placeholder="Call vendor\nDraft update"></textarea>
+        </div>
+        <div>
+          <label for="taskFormDetails">Details</label>
+          <textarea id="taskFormDetails" placeholder="Task details"></textarea>
+        </div>
+      </div>
+      <div>
+        <label for="taskFormNotes">Notes</label>
+        <textarea id="taskFormNotes" placeholder="Working notes"></textarea>
+      </div>
+      <div class="row">
+        <button id="saveTaskBtn">Save Task</button>
+        <button id="toggleTaskStatusBtn" class="ghost">Mark Complete</button>
+        <button id="openTaskContextBtn" class="ghost">Open Context</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="contextModalBackdrop" aria-hidden="true">
+    <div class="modal" style="max-width: 980px;">
+      <div class="modal-header">
+        <div>
+          <h2>Task Context</h2>
+          <p class="muted" id="contextSubtitle">Meeting references, summary, transcript, and audio.</p>
+        </div>
+        <button id="closeContextModalBtn" class="ghost">Close</button>
+      </div>
+      <div class="ctx-block">
+        <div class="ctx-links" id="contextLinks"></div>
+        <div class="muted" id="contextMeta"></div>
+      </div>
+      <div class="ctx-block">
+        <h3>Summary & Notes</h3>
+        <pre id="contextSummary"></pre>
+      </div>
+      <div class="ctx-block">
+        <h3>Transcript Preview</h3>
+        <pre id="contextTranscript"></pre>
+      </div>
+      <div class="ctx-block" id="contextAudioBlock" style="display:none;">
+        <h3>Audio Reference</h3>
+        <audio id="contextAudio" controls preload="none" style="width:100%;"></audio>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="graphDetailModalBackdrop" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="graphDetailTitle">Graph Detail</h2>
+          <p class="muted" id="graphDetailSubtitle">Node and relationship metadata.</p>
+        </div>
+        <button id="closeGraphDetailModalBtn" class="ghost">Close</button>
+      </div>
+      <div class="ctx-block">
+        <div class="graph-meta-list" id="graphDetailMeta"></div>
+      </div>
+      <div class="ctx-block">
+        <h3>Connected Nodes</h3>
+        <div class="ctx-links" id="graphDetailConnections"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const syncMessage = document.getElementById("syncMessage");
+    const askMessage = document.getElementById("askMessage");
+    const copyMessage = document.getElementById("copyMessage");
+    const answerBox = document.getElementById("firefliesAnswer");
+    const citationsList = document.getElementById("firefliesCitations");
+    const configLine = document.getElementById("configLine");
+    const overviewLine = document.getElementById("overviewLine");
+    const copyBtn = document.getElementById("copyBtn");
+
+    const todoMessage = document.getElementById("todoMessage");
+    const todoImportNotionLocalBtn = document.getElementById("todoImportNotionLocalBtn");
+    const todoImportNotionLocalFile = document.getElementById("todoImportNotionLocalFile");
+    const taskBoard = document.getElementById("taskBoard");
+    const taskStatsLine = document.getElementById("taskStatsLine");
+
+    const meetingsMessage = document.getElementById("meetingsMessage");
+    const meetingsList = document.getElementById("meetingsList");
+    const meetingDetailTitle = document.getElementById("meetingDetailTitle");
+    const meetingDetailMeta = document.getElementById("meetingDetailMeta");
+    const meetingSummaryBlocks = document.getElementById("meetingSummaryBlocks");
+    const meetingActionsList = document.getElementById("meetingActionsList");
+    const meetingActionStats = document.getElementById("meetingActionStats");
+    const meetingMarkReviewedBtn = document.getElementById("meetingMarkReviewedBtn");
+    const meetingMarkUnreviewedBtn = document.getElementById("meetingMarkUnreviewedBtn");
+
+    const graphMessage = document.getElementById("graphMessage");
+    const graphNodeTypeFilter = document.getElementById("graphNodeTypeFilter");
+    const graphSearch = document.getElementById("graphSearch");
+    const graphMeetingLimit = document.getElementById("graphMeetingLimit");
+    const graphActionsLimit = document.getElementById("graphActionsLimit");
+    const graphTopicsLimit = document.getElementById("graphTopicsLimit");
+    const graphCountsLine = document.getElementById("graphCountsLine");
+    const graphHoverHint = document.getElementById("graphHoverHint");
+    const graphCanvasWrap = document.getElementById("graphCanvasWrap");
+    const knowledgeGraphCanvas = document.getElementById("knowledgeGraphCanvas");
+    const graphEmptyState = document.getElementById("graphEmptyState");
+    const graphDecisionHint = document.getElementById("graphDecisionHint");
+    const graphDecisionTree = document.getElementById("graphDecisionTree");
+    const graphSelectionHint = document.getElementById("graphSelectionHint");
+    const graphSelectionMeta = document.getElementById("graphSelectionMeta");
+    const graphDetailModalBackdrop = document.getElementById("graphDetailModalBackdrop");
+    const graphDetailTitle = document.getElementById("graphDetailTitle");
+    const graphDetailSubtitle = document.getElementById("graphDetailSubtitle");
+    const graphDetailMeta = document.getElementById("graphDetailMeta");
+    const graphDetailConnections = document.getElementById("graphDetailConnections");
+
+    const taskStatusFilter = document.getElementById("taskStatusFilter");
+    const taskCategoryFilter = document.getElementById("taskCategoryFilter");
+    const taskPriorityFilter = document.getElementById("taskPriorityFilter");
+    const taskTagFilter = document.getElementById("taskTagFilter");
+    const taskSearch = document.getElementById("taskSearch");
+    const taskSortBy = document.getElementById("taskSortBy");
+    const taskShowHiddenOlderToggle = document.getElementById("taskShowHiddenOlderToggle");
+    const taskWindowHintLine = document.getElementById("taskWindowHintLine");
+    const clearTaskFiltersBtn = document.getElementById("clearTaskFiltersBtn");
+    const clearTaskStatusFilterBtn = document.getElementById("clearTaskStatusFilterBtn");
+    const clearTaskCategoryFilterBtn = document.getElementById("clearTaskCategoryFilterBtn");
+    const clearTaskPriorityFilterBtn = document.getElementById("clearTaskPriorityFilterBtn");
+    const clearTaskTagFilterBtn = document.getElementById("clearTaskTagFilterBtn");
+    const clearTaskSearchFilterBtn = document.getElementById("clearTaskSearchFilterBtn");
+    const clearTaskSortByFilterBtn = document.getElementById("clearTaskSortByFilterBtn");
+
+    const tagPalette = document.getElementById("tagPalette");
+    const taskModalTagPalette = document.getElementById("taskModalTagPalette");
+
+    const taskModalBackdrop = document.getElementById("taskModalBackdrop");
+    const contextModalBackdrop = document.getElementById("contextModalBackdrop");
+
+    const taskFormTitle = document.getElementById("taskFormTitle");
+    const taskFormCategory = document.getElementById("taskFormCategory");
+    const taskFormPriority = document.getElementById("taskFormPriority");
+    const taskFormDue = document.getElementById("taskFormDue");
+    const taskFormReminder = document.getElementById("taskFormReminder");
+    const taskFormRepeat = document.getElementById("taskFormRepeat");
+    const taskFormTags = document.getElementById("taskFormTags");
+    const taskFormSubtasks = document.getElementById("taskFormSubtasks");
+    const taskFormDetails = document.getElementById("taskFormDetails");
+    const taskFormNotes = document.getElementById("taskFormNotes");
+    const toggleTaskStatusBtn = document.getElementById("toggleTaskStatusBtn");
+    const taskPrevBtn = document.getElementById("taskPrevBtn");
+    const taskNextBtn = document.getElementById("taskNextBtn");
+    const taskNavStatus = document.getElementById("taskNavStatus");
+
+    const contextLinks = document.getElementById("contextLinks");
+    const contextMeta = document.getElementById("contextMeta");
+    const contextSummary = document.getElementById("contextSummary");
+    const contextTranscript = document.getElementById("contextTranscript");
+    const contextAudio = document.getElementById("contextAudio");
+    const contextAudioBlock = document.getElementById("contextAudioBlock");
+    const contextSubtitle = document.getElementById("contextSubtitle");
+
+    const state = {
+      activeTab: localStorage.getItem("fireflies_active_tab") || "fireflies",
+      localOnlyMode: false,
+      firefliesPullAllowed: false,
+      lastOneNoteOutput: "",
+      todoLists: [],
+      todos: [],
+      currentTaskId: "",
+      taskModalSessionId: 0,
+      dragTaskId: "",
+      dragLaneId: "",
+      meetingsLoaded: false,
+      meetings: [],
+      selectedMeetingId: "",
+      selectedMeetingActionIds: new Set(),
+      reviewedMeetingIds: loadReviewedMeetingIds(),
+      meetingsReviewedExpanded: loadMeetingsReviewedExpandedSetting(),
+      graphLoaded: false,
+      graphData: { nodes: [], links: [], stats: {} },
+      graphNodeFilter: "all",
+      graphSearchTerm: "",
+      graphRuntime: null,
+      contextBriefCache: Object.create(null),
+      columnSortModes: loadColumnSortModes(),
+      showHiddenOlder: loadShowHiddenOlderSetting(),
+      tagPalette: loadTagPalette()
+    };
+
+    const TASK_FILTER_DEFAULTS = Object.freeze({
+      status: "open",
+      category: "all",
+      priority: "all",
+      tag: "",
+      search: "",
+      sortBy: "newest"
+    });
+
+    function fmtDate(iso) {
+      if (!iso) return "n/a";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      return d.toLocaleString();
+    }
+
+    function toLocalInput(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return "";
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function fromLocalInput(value) {
+      if (!value) return null;
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return null;
+      return d.toISOString();
+    }
+
+    function parseLimit(raw) {
+      if (raw === null || raw === undefined || raw === "") return 0;
+      const n = Number(raw);
+      if (!Number.isFinite(n) || n <= 0) return 0;
+      return Math.floor(n);
+    }
+
+    function safeText(value) {
+      return String(value || "").replace(/\r\n/g, "\n").trim();
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function parseCsv(text) {
+      return String(text || "")
+        .split(/[\n,;]+/)
+        .map(item => item.trim())
+        .filter(Boolean);
+    }
+
+    function parseSteps(text) {
+      return String(text || "")
+        .split(/\r?\n/)
+        .map(item => item.trim())
+        .filter(Boolean)
+        .map(title => ({ title, done: false }));
+    }
+
+    function parseTodoDetailField(details, label) {
+      const needle = `${String(label || "").toLowerCase()}:`;
+      if (!needle.trim()) return "";
+      const lines = String(details || "").split(/\r?\n/);
+      for (const rawLine of lines) {
+        const line = String(rawLine || "").trim();
+        if (!line.toLowerCase().startsWith(needle)) continue;
+        return line.slice(needle.length).trim();
+      }
+      return "";
+    }
+
+    function meetingOccurredAtMs(todo) {
+      const occurredRaw = parseTodoDetailField(todo?.details, "Occurred");
+      const ms = occurredRaw ? new Date(occurredRaw).getTime() : Number.NaN;
+      return Number.isFinite(ms) ? ms : null;
+    }
+
+    function setSelectValue(selectEl, desiredValue, fallbackValue = "") {
+      const desired = String(desiredValue || "");
+      if ([...selectEl.options].some(option => option.value === desired)) {
+        selectEl.value = desired;
+        return;
+      }
+      const fallback = String(fallbackValue || "");
+      if (fallback && [...selectEl.options].some(option => option.value === fallback)) {
+        selectEl.value = fallback;
+        return;
+      }
+      if (selectEl.options.length > 0) {
+        selectEl.value = selectEl.options[0].value;
+      }
+    }
+
+    function clearTaskFilter(filterKey) {
+      if (filterKey === "status") {
+        setSelectValue(taskStatusFilter, TASK_FILTER_DEFAULTS.status);
+      } else if (filterKey === "category") {
+        setSelectValue(taskCategoryFilter, TASK_FILTER_DEFAULTS.category);
+      } else if (filterKey === "priority") {
+        setSelectValue(taskPriorityFilter, TASK_FILTER_DEFAULTS.priority);
+      } else if (filterKey === "tag") {
+        taskTagFilter.value = TASK_FILTER_DEFAULTS.tag;
+      } else if (filterKey === "search") {
+        taskSearch.value = TASK_FILTER_DEFAULTS.search;
+      } else if (filterKey === "sortBy") {
+        setSelectValue(taskSortBy, TASK_FILTER_DEFAULTS.sortBy);
+      }
+      renderTaskBoard();
+    }
+
+    function clearAllTaskFilters() {
+      setSelectValue(taskStatusFilter, TASK_FILTER_DEFAULTS.status);
+      setSelectValue(taskCategoryFilter, TASK_FILTER_DEFAULTS.category);
+      setSelectValue(taskPriorityFilter, TASK_FILTER_DEFAULTS.priority);
+      taskTagFilter.value = TASK_FILTER_DEFAULTS.tag;
+      taskSearch.value = TASK_FILTER_DEFAULTS.search;
+      setSelectValue(taskSortBy, TASK_FILTER_DEFAULTS.sortBy);
+      renderTaskBoard();
+    }
+
+    function applyCategoryFilterFromCard(tag) {
+      const normalized = String(tag || "").trim();
+      if (!normalized) return;
+      taskTagFilter.value = normalized;
+      renderTaskBoard();
+    }
+
+    function updateTaskFilterClearButtons() {
+      const statusDefault = (taskStatusFilter.value || TASK_FILTER_DEFAULTS.status) === TASK_FILTER_DEFAULTS.status;
+      const categoryDefault = (taskCategoryFilter.value || TASK_FILTER_DEFAULTS.category) === TASK_FILTER_DEFAULTS.category;
+      const priorityDefault = (taskPriorityFilter.value || TASK_FILTER_DEFAULTS.priority) === TASK_FILTER_DEFAULTS.priority;
+      const tagDefault = !String(taskTagFilter.value || "").trim();
+      const searchDefault = !String(taskSearch.value || "").trim();
+      const sortDefault = (taskSortBy.value || TASK_FILTER_DEFAULTS.sortBy) === TASK_FILTER_DEFAULTS.sortBy;
+
+      clearTaskStatusFilterBtn.disabled = statusDefault;
+      clearTaskCategoryFilterBtn.disabled = categoryDefault;
+      clearTaskPriorityFilterBtn.disabled = priorityDefault;
+      clearTaskTagFilterBtn.disabled = tagDefault;
+      clearTaskSearchFilterBtn.disabled = searchDefault;
+      clearTaskSortByFilterBtn.disabled = sortDefault;
+
+      clearTaskFiltersBtn.disabled =
+        statusDefault &&
+        categoryDefault &&
+        priorityDefault &&
+        tagDefault &&
+        searchDefault &&
+        sortDefault;
+    }
+
+    function shortenText(text, maxLen = 160) {
+      const value = String(text || "").replace(/\s+/g, " ").trim();
+      if (!value) return "";
+      if (value.length <= maxLen) return value;
+      return `${value.slice(0, Math.max(0, maxLen - 3)).trimEnd()}...`;
+    }
+
+    function getActionItemText(item) {
+      if (!item) return "";
+      if (typeof item === "string") return item;
+      if (typeof item !== "object") return "";
+      const owner = safeText(item.owner || item.assignee || "");
+      const task = safeText(item.task || item.title || item.action || item.text || "");
+      if (owner && task) return `${owner}: ${task}`;
+      return task || owner;
+    }
+
+    function buildCompactContextNote(context) {
+      if (!context || typeof context !== "object") return "";
+      const taskBrief = shortenText(context.taskBrief, 190);
+      const taskNext = shortenText(context.taskNext, 135);
+      if (taskBrief) {
+        const lines = [`Context Brief: ${taskBrief}`];
+        if (taskNext && taskNext !== taskBrief) {
+          lines.push(`Context Next: ${taskNext}`);
+        }
+        return lines.join("\n");
+      }
+      const summary = context.summary || {};
+      const overviewFirst = Array.isArray(summary.overview) ? summary.overview[0] : "";
+      const decisionFirst = Array.isArray(summary.decisions) ? summary.decisions[0] : "";
+      const nextFirst = Array.isArray(summary.nextSteps) ? summary.nextSteps[0] : "";
+      const actionFirst = Array.isArray(summary.actionItems) ? getActionItemText(summary.actionItems[0]) : "";
+
+      const main =
+        shortenText(summary.tldr, 190) ||
+        shortenText(overviewFirst, 170) ||
+        shortenText(decisionFirst, 170) ||
+        shortenText(nextFirst, 170) ||
+        shortenText(actionFirst, 170);
+      if (!main) return "";
+
+      const next =
+        shortenText(nextFirst, 135) ||
+        shortenText(actionFirst, 135);
+
+      const lines = [`Context Brief: ${main}`];
+      if (next && next !== main) {
+        lines.push(`Context Next: ${next}`);
+      }
+      return lines.join("\n");
+    }
+
+    function mergeContextBriefIntoNotes(notes, contextBriefBlock) {
+      const cleaned = String(notes || "")
+        .replace(/(?:^|\n)Context Brief:[^\n]*(?:\nContext Next:[^\n]*)?(?=\n|$)/gi, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+      if (!contextBriefBlock) return cleaned;
+      return cleaned ? `${cleaned}\n\n${contextBriefBlock}` : contextBriefBlock;
+    }
+
+    async function applyCompactContextNote(taskId, modalSessionId, notesSnapshot) {
+      if (!taskId) return;
+      const cacheKey = String(taskId);
+      let contextBrief = state.contextBriefCache[cacheKey];
+      if (contextBrief === undefined) {
+        try {
+          const result = await fetchJson(`/api/todos/context/${encodeURIComponent(taskId)}`);
+          contextBrief = buildCompactContextNote(result?.context);
+        } catch {
+          contextBrief = "";
+        }
+        state.contextBriefCache[cacheKey] = contextBrief || "";
+      }
+
+      if (!contextBrief) return;
+      if (modalSessionId !== state.taskModalSessionId) return;
+      if (String(state.currentTaskId || "") !== cacheKey) return;
+      if (String(taskFormNotes.value || "") !== String(notesSnapshot || "")) return;
+      taskFormNotes.value = mergeContextBriefIntoNotes(taskFormNotes.value, contextBrief);
+    }
+
+    function priorityRank(value) {
+      const p = String(value || "medium").toLowerCase();
+      if (p === "high") return 0;
+      if (p === "medium") return 1;
+      return 2;
+    }
+
+    function priorityClass(value) {
+      const p = String(value || "medium").toLowerCase();
+      if (p === "high") return "high";
+      if (p === "low") return "low";
+      return "medium";
+    }
+
+    function listName(listId) {
+      const match = state.todoLists.find(item => item.id === listId);
+      return match?.name || "Uncategorized";
+    }
+
+    function listColor(listId) {
+      const match = state.todoLists.find(item => item.id === listId);
+      return match?.color || "#4f6b91";
+    }
+
+    function getNextListSortOrder() {
+      const maxSort = state.todoLists.reduce(
+        (max, item) => Math.max(max, Number(item?.sortOrder || 0)),
+        0
+      );
+      return maxSort + 10;
+    }
+
+    function normalizeListSortOrder(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return 0;
+      return n;
+    }
+
+    function normalizeColumnSortMode(value) {
+      const mode = String(value || "").trim();
+      if (mode === "meeting_date_asc" || mode === "meeting_date_desc") return mode;
+      return "";
+    }
+
+    function columnSortKey(listId) {
+      const id = String(listId || "").trim();
+      return id || "__unassigned__";
+    }
+
+    function loadColumnSortModes() {
+      try {
+        const raw = localStorage.getItem("task_column_sort_modes_v1") || "{}";
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return {};
+        const normalized = {};
+        for (const [key, value] of Object.entries(parsed)) {
+          const mode = normalizeColumnSortMode(value);
+          if (!mode) continue;
+          normalized[String(key)] = mode;
+        }
+        return normalized;
+      } catch {
+        return {};
+      }
+    }
+
+    function saveColumnSortModes() {
+      localStorage.setItem("task_column_sort_modes_v1", JSON.stringify(state.columnSortModes || {}));
+    }
+
+    function getColumnSortMode(listId) {
+      const key = columnSortKey(listId);
+      return normalizeColumnSortMode(state.columnSortModes[key]);
+    }
+
+    function setColumnSortMode(listId, sortMode) {
+      const key = columnSortKey(listId);
+      const normalized = normalizeColumnSortMode(sortMode);
+      if (normalized) {
+        state.columnSortModes[key] = normalized;
+      } else {
+        delete state.columnSortModes[key];
+      }
+      saveColumnSortModes();
+      renderTaskBoard();
+    }
+
+    function loadShowHiddenOlderSetting() {
+      try {
+        return localStorage.getItem("task_show_hidden_older_v1") === "1";
+      } catch {
+        return false;
+      }
+    }
+
+    function saveShowHiddenOlderSetting(value) {
+      localStorage.setItem("task_show_hidden_older_v1", value ? "1" : "0");
+    }
+
+    function normalizeMeetingStorageId(value) {
+      return String(value || "").trim();
+    }
+
+    function loadReviewedMeetingIds() {
+      try {
+        const raw = localStorage.getItem("meetings_reviewed_ids_v1") || "[]";
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return new Set();
+        const ids = parsed
+          .map(item => normalizeMeetingStorageId(item))
+          .filter(Boolean);
+        return new Set(ids);
+      } catch {
+        return new Set();
+      }
+    }
+
+    function saveReviewedMeetingIds() {
+      const ids = Array.from(state.reviewedMeetingIds || [])
+        .map(item => normalizeMeetingStorageId(item))
+        .filter(Boolean);
+      localStorage.setItem("meetings_reviewed_ids_v1", JSON.stringify(ids));
+    }
+
+    function loadMeetingsReviewedExpandedSetting() {
+      try {
+        return localStorage.getItem("meetings_reviewed_expanded_v1") === "1";
+      } catch {
+        return false;
+      }
+    }
+
+    function saveMeetingsReviewedExpandedSetting(value) {
+      localStorage.setItem("meetings_reviewed_expanded_v1", value ? "1" : "0");
+    }
+
+    function getFirstPassWindowBounds() {
+      const end = new Date();
+      const start = new Date(end);
+      start.setDate(start.getDate() - 14);
+      start.setHours(0, 0, 0, 0);
+      return {
+        startMs: start.getTime(),
+        endMs: end.getTime(),
+        startLabel: start.toLocaleDateString(),
+        endLabel: end.toLocaleDateString()
+      };
+    }
+
+    function isTodoOutsideFirstPassWindow(todo) {
+      const occurredMs = meetingOccurredAtMs(todo);
+      if (occurredMs === null) return false;
+      const windowBounds = getFirstPassWindowBounds();
+      return occurredMs < windowBounds.startMs || occurredMs > windowBounds.endMs;
+    }
+
+    function updateTaskWindowHint(hiddenCount = 0) {
+      const windowBounds = getFirstPassWindowBounds();
+      if (state.showHiddenOlder) {
+        taskWindowHintLine.textContent =
+          `Showing all tasks. Last-two-weeks window: ${windowBounds.startLabel} to ${windowBounds.endLabel}.`;
+        return;
+      }
+      const hiddenSuffix = hiddenCount > 0 ? ` Hidden older tasks: ${hiddenCount}.` : "";
+      taskWindowHintLine.textContent =
+        `Last-two-weeks window active: ${windowBounds.startLabel} to ${windowBounds.endLabel}.${hiddenSuffix}`;
+    }
+
+    function getTagColor(tag) {
+      const key = String(tag || "").trim().toLowerCase();
+      return state.tagPalette[key] || "";
+    }
+
+    function loadTagPalette() {
+      try {
+        const raw = localStorage.getItem("task_tag_palette_v1") || "{}";
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return {};
+        return parsed;
+      } catch {
+        return {};
+      }
+    }
+
+    function saveTagPalette() {
+      localStorage.setItem("task_tag_palette_v1", JSON.stringify(state.tagPalette));
+    }
+
+    async function fetchJson(url, opts) {
+      const res = await fetch(url, opts);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const retrySuffix = data.retryAt ? ` (retry at ${fmtDate(data.retryAt)})` : "";
+        const baseError = data.error || `${url} failed`;
+        const detail = data.message ? `: ${data.message}` : "";
+        throw new Error(`${baseError}${detail}${retrySuffix}`);
+      }
+      return data;
+    }
+
+    function setTodoStatus(message, isError = false) {
+      todoMessage.textContent = message || "";
+      todoMessage.className = isError ? "danger" : "muted";
+    }
+
+    function activateTab(tab) {
+      const normalized = String(tab || "").trim().toLowerCase();
+      if (normalized === "fireflies" || normalized === "meetings" || normalized === "tasks" || normalized === "graph") {
+        state.activeTab = normalized;
+      } else {
+        state.activeTab = "fireflies";
+      }
+      localStorage.setItem("fireflies_active_tab", state.activeTab);
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        const active = btn.dataset.tab === state.activeTab;
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      document.querySelectorAll(".panel-tab-btn").forEach(btn => {
+        const active = btn.dataset.tab === state.activeTab;
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      document.getElementById("panel-fireflies").classList.toggle("active", state.activeTab === "fireflies");
+      document.getElementById("panel-meetings").classList.toggle("active", state.activeTab === "meetings");
+      document.getElementById("panel-graph").classList.toggle("active", state.activeTab === "graph");
+      document.getElementById("panel-tasks").classList.toggle("active", state.activeTab === "tasks");
+      if (state.activeTab === "meetings" && !state.meetingsLoaded) {
+        refreshMeetingsWorkbench();
+      }
+      if (state.activeTab === "graph") {
+        if (!state.graphLoaded) {
+          refreshKnowledgeGraph();
+        } else {
+          ensureKnowledgeGraphCanvasSize();
+          renderKnowledgeGraph();
+        }
+      }
+    }
+
+    function sortTodosByMode(items, sortModeInput = "") {
+      const sortMode = String(sortModeInput || TASK_FILTER_DEFAULTS.sortBy);
+      const arr = [...items];
+      arr.sort((a, b) => {
+        if (sortMode === "meeting_date_asc" || sortMode === "meeting_date_desc") {
+          const aM = meetingOccurredAtMs(a);
+          const bM = meetingOccurredAtMs(b);
+          const aHas = aM !== null;
+          const bHas = bM !== null;
+          if (aHas && bHas && aM !== bM) {
+            return sortMode === "meeting_date_asc" ? aM - bM : bM - aM;
+          }
+          if (aHas !== bHas) return aHas ? -1 : 1;
+        }
+        if (sortMode === "newest") {
+          const aC = new Date(a.createdAt || 0).getTime();
+          const bC = new Date(b.createdAt || 0).getTime();
+          if (aC !== bC) return bC - aC;
+        }
+        if (sortMode === "priority") {
+          const p = priorityRank(a.priority) - priorityRank(b.priority);
+          if (p !== 0) return p;
+        }
+        if (sortMode === "due") {
+          const aDue = a.due ? new Date(a.due).getTime() : Number.MAX_SAFE_INTEGER;
+          const bDue = b.due ? new Date(b.due).getTime() : Number.MAX_SAFE_INTEGER;
+          if (aDue !== bDue) return aDue - bDue;
+        }
+        if (sortMode === "title") {
+          const t = String(a.title || "").localeCompare(String(b.title || ""));
+          if (t !== 0) return t;
+        }
+        if (sortMode === "updated") {
+          const aU = new Date(a.updatedAt || 0).getTime();
+          const bU = new Date(b.updatedAt || 0).getTime();
+          if (aU !== bU) return bU - aU;
+        }
+        const aOrder = Number(a.sortOrder || 0);
+        const bOrder = Number(b.sortOrder || 0);
+        if (aOrder !== bOrder) return bOrder - aOrder;
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      });
+      return arr;
+    }
+
+    function sortTodos(items) {
+      return sortTodosByMode(items, taskSortBy.value || TASK_FILTER_DEFAULTS.sortBy);
+    }
+
+    function buildOneNoteOutput(question, topK, result) {
+      const lines = [];
+      lines.push("Fireflies RAG Notes");
+      lines.push(`Generated: ${new Date().toLocaleString()}`);
+      lines.push(`Question: ${safeText(question)}`);
+      lines.push("");
+      lines.push("Answer");
+      lines.push(safeText(result?.answer) || "No answer returned.");
+      lines.push("");
+      lines.push("Supporting Meeting Evidence");
+      const citations = Array.isArray(result?.citations) ? result.citations : [];
+      if (!citations.length) {
+        lines.push("No citations returned.");
+      } else {
+        citations.forEach((cite, idx) => {
+          lines.push(`${idx + 1}. ${safeText(cite?.meeting_title) || "Meeting"} (${fmtDate(cite?.occurred_at)})`);
+          if (cite?.speaker) lines.push(`   Speaker: ${safeText(cite.speaker)}`);
+          if (cite?.snippet) lines.push(`   Note: ${safeText(cite.snippet)}`);
+        });
+      }
+      lines.push("");
+      lines.push(`Top K: ${topK}`);
+      lines.push(`Retrieved chunks: ${result?.debug?.retrievedCount || 0}`);
+      if (result?.debug?.reasoningError) {
+        lines.push(`Reasoning fallback: ${safeText(result.debug.reasoningError)}`);
+      }
+      return lines.join("\n").trim();
+    }
+
+    async function refreshStatus() {
+      try {
+        const overview = await fetchJson("/api/fireflies/overview");
+        const config = overview.config || {};
+        const rag = overview.ragCounts || {};
+        const sync = overview.sync || {};
+        const coverage = overview.coverage || {};
+        const last = sync.lastResult || {};
+        const lastRefreshAt = overview.lastRefreshAt || sync.lastSyncAt || sync.lastAttemptAt || "";
+
+        state.localOnlyMode = Boolean(config.localOnlyMode);
+        state.firefliesPullAllowed = Boolean(config.firefliesPullAllowed);
+
+        const syncEnabled = !state.localOnlyMode || state.firefliesPullAllowed;
+        const syncIntervalMinutes = Number(config.syncIntervalMinutes || 0);
+        const syncLimit = Number(config.syncLimit || 0);
+        const syncWindowConfigured =
+          String(config.syncWindowStartHour || "") !== "" &&
+          String(config.syncWindowEndHour || "") !== "" &&
+          String(config.syncWindowStartHour || "") !== String(config.syncWindowEndHour || "");
+        const syncWindow = syncWindowConfigured
+          ? `${config.syncWindowStartHour}:00-${config.syncWindowEndHour}:00 ${config.syncWindowTimezone || "(local time)"}`
+          : "always";
+        const syncLoop = syncIntervalMinutes > 0
+          ? `every ${syncIntervalMinutes}m, limit ${syncLimit > 0 ? syncLimit : "all"}, window ${syncWindow}`
+          : "off";
+
+        document.getElementById("syncBtn").disabled = !syncEnabled;
+        document.getElementById("catchupBtn").disabled = !syncEnabled;
+
+        configLine.textContent =
+          `Local-only: ${state.localOnlyMode ? "ON" : "OFF"} | ` +
+          `Fireflies pull: ${syncEnabled ? "allowed" : "blocked"} | ` +
+          `Fireflies key: ${config.firefliesConfigured ? "configured" : "missing"} | ` +
+          `Reasoning: ${config.reasoningProvider || "openai"} (${config.reasoningModel || "default"}) | ` +
+          `Embeddings: ${config.embeddingsProvider} | DB: ${config.sqlitePath} | ` +
+          `Auto-sync: ${syncLoop}`;
+
+        overviewLine.textContent =
+          `Last refresh: ${fmtDate(lastRefreshAt)} | ` +
+          `Meetings: ${coverage.meetings ?? rag.firefliesMeetings ?? 0} | ` +
+          `Chunks: ${coverage.chunks ?? rag.totalChunks ?? 0} | ` +
+          `Avg chunks/meeting: ${coverage.avgChunksPerMeeting || 0} | ` +
+          `Coverage: ${fmtDate(coverage.earliest)} -> ${fmtDate(coverage.latest)}`;
+
+        if (state.localOnlyMode && !state.firefliesPullAllowed) {
+          syncMessage.className = "muted";
+          syncMessage.textContent = "Sync is disabled in LOCAL_ONLY_MODE. Set ALLOW_FIREFLIES_PULL=1 to allow inbound pull only.";
+          return;
+        }
+
+        if (last.finishedAt) {
+          syncMessage.className = "muted";
+          const repairSuffix = last.embeddingRepair
+            ? ` Index repaired (cleared ${last.embeddingRepair.clearedChunks || 0} chunks).`
+            : "";
+          syncMessage.textContent =
+            `Last sync (${fmtDate(last.finishedAt)}): scanned ${last.scannedMeetings || 0}, ` +
+            `synced ${last.syncedMeetings || 0}, skipped ${last.skippedMeetings || 0}, ` +
+            `failed ${last.failedMeetings || 0}.${repairSuffix}`;
+        } else if (last.failedAt) {
+          syncMessage.className = "danger";
+          const retrySuffix = last.retryAt ? ` Retry at ${fmtDate(last.retryAt)}.` : "";
+          syncMessage.textContent =
+            `Last sync failed (${fmtDate(last.failedAt)}): ${last.error || "unknown_error"}.${retrySuffix}`;
+        }
+      } catch (_err) {
+        overviewLine.textContent = "Unable to connect to Fireflies RAG service.";
+        overviewLine.className = "danger";
+      }
+    }
+
+    async function runSync() {
+      if (state.localOnlyMode && !state.firefliesPullAllowed) {
+        syncMessage.className = "muted";
+        syncMessage.textContent = "Sync blocked: set ALLOW_FIREFLIES_PULL=1 for inbound Fireflies pull.";
+        return;
+      }
+      syncMessage.className = "muted";
+      syncMessage.textContent = "Syncing...";
+      try {
+        const limit = parseLimit(document.getElementById("syncLimit").value);
+        const force = document.getElementById("syncForce").checked;
+        const result = await fetchJson("/api/fireflies/sync", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ limit, force })
+        });
+        syncMessage.textContent =
+          `Sync complete: scanned ${result.scannedMeetings || 0}, ` +
+          `synced ${result.syncedMeetings || 0}, chunks ${result.syncedChunks || 0}, ` +
+          `skipped ${result.skippedMeetings || 0}, failed ${result.failedMeetings || 0}.` +
+          `${result.embeddingRepair ? ` Index repaired (cleared ${result.embeddingRepair.clearedChunks || 0} chunks).` : ""}`;
+      } catch (err) {
+        syncMessage.textContent = `Sync failed: ${err.message || err}`;
+        syncMessage.className = "danger";
+      } finally {
+        refreshStatus();
+      }
+    }
+
+    async function runCatchup() {
+      if (state.localOnlyMode && !state.firefliesPullAllowed) {
+        syncMessage.className = "muted";
+        syncMessage.textContent = "Sync blocked: set ALLOW_FIREFLIES_PULL=1 for inbound Fireflies pull.";
+        return;
+      }
+      syncMessage.className = "muted";
+      syncMessage.textContent = "Running full catch-up sync...";
+      try {
+        const result = await fetchJson("/api/fireflies/sync/catchup", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({})
+        });
+        syncMessage.textContent =
+          `Catch-up complete: scanned ${result.scannedMeetings || 0}, ` +
+          `synced ${result.syncedMeetings || 0}, chunks ${result.syncedChunks || 0}, ` +
+          `skipped ${result.skippedMeetings || 0}, failed ${result.failedMeetings || 0}.` +
+          `${result.embeddingRepair ? ` Index repaired (cleared ${result.embeddingRepair.clearedChunks || 0} chunks).` : ""}`;
+      } catch (err) {
+        syncMessage.textContent = `Sync failed: ${err.message || err}`;
+        syncMessage.className = "danger";
+      } finally {
+        refreshStatus();
+      }
+    }
+
+    async function askQuestion() {
+      askMessage.textContent = "Querying...";
+      answerBox.textContent = "";
+      citationsList.innerHTML = "";
+      copyMessage.textContent = "";
+      copyMessage.className = "muted";
+      state.lastOneNoteOutput = "";
+      copyBtn.disabled = true;
+      try {
+        const question = safeText(document.getElementById("firefliesQuestion").value);
+        const topK = Number(document.getElementById("firefliesTopK").value || 8);
+        if (!question) throw new Error("Question is required");
+        const result = await fetchJson("/api/rag/ask", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ question, topK })
+        });
+        state.lastOneNoteOutput = buildOneNoteOutput(question, topK, result);
+        answerBox.textContent = state.lastOneNoteOutput;
+        copyBtn.disabled = false;
+
+        (Array.isArray(result.citations) ? result.citations : []).forEach((cite, idx) => {
+          const li = document.createElement("li");
+          li.textContent = `${idx + 1}. ${cite.meeting_title || "Meeting"} ${cite.occurred_at ? `(${cite.occurred_at})` : ""} - ${String(cite.snippet || "").slice(0, 190)}`;
+          citationsList.appendChild(li);
+        });
+
+        const errorSuffix = result.debug?.reasoningError ? ` | Reasoning fallback: ${result.debug.reasoningError}` : "";
+        askMessage.className = "muted";
+        askMessage.textContent = `Retrieved ${result.debug?.retrievedCount || 0} chunks${errorSuffix}`;
+      } catch (err) {
+        askMessage.textContent = `Query failed: ${err.message || err}`;
+        askMessage.className = "danger";
+        copyBtn.disabled = true;
+      }
+    }
+
+    async function copyForOneNote() {
+      if (!state.lastOneNoteOutput) {
+        copyMessage.className = "danger";
+        copyMessage.textContent = "Nothing to copy yet. Run a query first.";
+        return;
+      }
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(state.lastOneNoteOutput);
+        } else {
+          const temp = document.createElement("textarea");
+          temp.value = state.lastOneNoteOutput;
+          temp.setAttribute("readonly", "");
+          temp.style.position = "fixed";
+          temp.style.left = "-9999px";
+          document.body.appendChild(temp);
+          temp.focus();
+          temp.select();
+          const ok = document.execCommand("copy");
+          document.body.removeChild(temp);
+          if (!ok) throw new Error("Clipboard copy command was blocked.");
+        }
+        copyMessage.className = "muted";
+        copyMessage.textContent = `Copied ${state.lastOneNoteOutput.length} characters to clipboard.`;
+      } catch (err) {
+        copyMessage.className = "danger";
+        copyMessage.textContent = `Copy failed: ${err.message || err}`;
+      }
+    }
+
+    function upsertSelectOptions(selectEl, options, { includeAll = false, allLabel = "All" } = {}) {
+      const current = selectEl.value;
+      selectEl.innerHTML = "";
+      if (includeAll) {
+        const opt = document.createElement("option");
+        opt.value = "all";
+        opt.textContent = allLabel;
+        selectEl.appendChild(opt);
+      }
+      options.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = item.name || item.id;
+        selectEl.appendChild(opt);
+      });
+      if (current && [...selectEl.options].some(option => option.value === current)) {
+        selectEl.value = current;
+      } else if (includeAll) {
+        selectEl.value = "all";
+      } else if (selectEl.options.length > 0) {
+        selectEl.value = selectEl.options[0].value;
+      }
+    }
+
+    function renderTagPalette() {
+      const entries = Object.entries(state.tagPalette)
+        .sort((a, b) => a[0].localeCompare(b[0]));
+      tagPalette.innerHTML = "";
+      taskModalTagPalette.innerHTML = "";
+      const selected = new Set(parseCsv(taskFormTags.value).map(item => String(item || "").toLowerCase()));
+
+      if (!entries.length) {
+        tagPalette.innerHTML = '<span class="muted">No saved categories yet.</span>';
+      }
+
+      entries.forEach(([tag, color]) => {
+        const chip = document.createElement("div");
+        chip.className = "palette-item";
+        chip.innerHTML = `<span class="dot" style="background:${color};"></span><span>${tag}</span>`;
+        const removeBtn = document.createElement("button");
+        removeBtn.textContent = "Remove";
+        removeBtn.addEventListener("click", () => {
+          delete state.tagPalette[tag];
+          saveTagPalette();
+          renderTagPalette();
+          renderTaskBoard();
+        });
+        chip.appendChild(removeBtn);
+        tagPalette.appendChild(chip);
+
+        const modalChip = document.createElement("button");
+        modalChip.className = "palette-item toggle";
+        modalChip.type = "button";
+        modalChip.innerHTML = `<span class="dot" style="background:${color};"></span><span>${tag}</span>`;
+        if (selected.has(String(tag || "").toLowerCase())) {
+          modalChip.classList.add("active");
+        }
+        modalChip.addEventListener("click", () => toggleTaskTag(tag));
+        taskModalTagPalette.appendChild(modalChip);
+      });
+    }
+
+    function toggleTaskTag(tag) {
+      const current = parseCsv(taskFormTags.value);
+      const key = String(tag || "").trim();
+      if (!key) return;
+      const keyLower = key.toLowerCase();
+      const idx = current.findIndex(item => String(item || "").toLowerCase() === keyLower);
+      const next = idx >= 0
+        ? current.filter((_, currentIdx) => currentIdx !== idx)
+        : [...current, key];
+      taskFormTags.value = next.join(", ");
+      renderTagPalette();
+    }
+
+    function renderTaskStats(visibleTodos, hiddenOlderCount = 0) {
+      const openCount = visibleTodos.filter(item => String(item.status) !== "done").length;
+      const doneCount = visibleTodos.length - openCount;
+      const hiddenSuffix = hiddenOlderCount > 0 ? ` | Hidden older: ${hiddenOlderCount}` : "";
+      taskStatsLine.textContent =
+        `Visible cards: ${visibleTodos.length} | Open: ${openCount} | Done: ${doneCount}${hiddenSuffix}`;
+    }
+
+    function isKanbanHiddenTodo(todo) {
+      const tags = Array.isArray(todo?.tags) ? todo.tags : [];
+      return tags.some(tag => String(tag || "").trim().toLowerCase() === "kanban-hidden");
+    }
+
+    function matchesTodoFilters(todo, { ignoreStatus = false, ignoreDateWindow = false } = {}) {
+      const statusFilter = taskStatusFilter.value || "open";
+      const categoryFilter = taskCategoryFilter.value || "all";
+      const priorityFilter = taskPriorityFilter.value || "all";
+      const tagFilter = String(taskTagFilter.value || "").trim().toLowerCase();
+      const search = String(taskSearch.value || "").trim().toLowerCase();
+
+      if (isKanbanHiddenTodo(todo)) return false;
+      if (!ignoreStatus && statusFilter !== "all" && String(todo.status || "open") !== statusFilter) return false;
+      if (categoryFilter !== "all" && (todo.listId || "") !== categoryFilter) return false;
+      if (priorityFilter !== "all" && String(todo.priority || "medium").toLowerCase() !== priorityFilter) return false;
+      if (tagFilter) {
+        const tags = Array.isArray(todo.tags) ? todo.tags.map(tag => String(tag || "").toLowerCase()) : [];
+        if (!tags.some(tag => tag.includes(tagFilter))) return false;
+      }
+      if (search) {
+        const haystack = [todo.title, todo.details, todo.notes, ...(todo.tags || [])]
+          .map(item => String(item || "").toLowerCase())
+          .join(" ");
+        if (!haystack.includes(search)) return false;
+      }
+      if (!ignoreDateWindow && !state.showHiddenOlder && isTodoOutsideFirstPassWindow(todo)) return false;
+      return true;
+    }
+
+    function filterTodos(options = {}) {
+      return state.todos.filter(todo => matchesTodoFilters(todo, options));
+    }
+
+    function getVisibleTaskIdsInBoardOrder({ includeDone = false } = {}) {
+      const seen = new Set();
+      return [...taskBoard.querySelectorAll(".task-card[data-task-id]")]
+        .filter(card => card.offsetParent !== null)
+        .filter(card => includeDone || !card.classList.contains("done-card"))
+        .map(card => String(card.dataset.taskId || "").trim())
+        .filter(taskId => {
+          if (!taskId || seen.has(taskId)) return false;
+          seen.add(taskId);
+          return true;
+        });
+    }
+
+    function resolveTaskNavigation() {
+      const openTaskIds = getVisibleTaskIdsInBoardOrder();
+      const currentTaskId = String(state.currentTaskId || "").trim();
+      if (!currentTaskId) {
+        return {
+          openTaskIds,
+          index: -1,
+          prevId: "",
+          nextId: ""
+        };
+      }
+
+      const openIndex = openTaskIds.indexOf(currentTaskId);
+      if (openIndex >= 0) {
+        return {
+          openTaskIds,
+          index: openIndex,
+          prevId: openTaskIds[openIndex - 1] || "",
+          nextId: openTaskIds[openIndex + 1] || ""
+        };
+      }
+
+      const allVisibleIds = getVisibleTaskIdsInBoardOrder({ includeDone: true });
+      const anchorIndex = allVisibleIds.indexOf(currentTaskId);
+      if (anchorIndex < 0) {
+        return {
+          openTaskIds,
+          index: -1,
+          prevId: "",
+          nextId: ""
+        };
+      }
+
+      const openSet = new Set(openTaskIds);
+      let prevId = "";
+      for (let i = anchorIndex - 1; i >= 0; i -= 1) {
+        const candidate = allVisibleIds[i];
+        if (openSet.has(candidate)) {
+          prevId = candidate;
+          break;
+        }
+      }
+
+      let nextId = "";
+      for (let i = anchorIndex + 1; i < allVisibleIds.length; i += 1) {
+        const candidate = allVisibleIds[i];
+        if (openSet.has(candidate)) {
+          nextId = candidate;
+          break;
+        }
+      }
+
+      return {
+        openTaskIds,
+        index: -1,
+        prevId,
+        nextId
+      };
+    }
+
+    function updateTaskNavControls() {
+      const nav = resolveTaskNavigation();
+      taskPrevBtn.disabled = !nav.prevId;
+      taskNextBtn.disabled = !nav.nextId;
+      taskNavStatus.textContent = nav.index >= 0
+        ? `${nav.index + 1} of ${nav.openTaskIds.length}`
+        : `0 of ${nav.openTaskIds.length}`;
+    }
+
+    function openAdjacentTask(step) {
+      if (!Number.isFinite(step) || step === 0) return;
+      const nav = resolveTaskNavigation();
+      const targetTaskId = step < 0 ? nav.prevId : nav.nextId;
+      if (!targetTaskId) {
+        updateTaskNavControls();
+        return;
+      }
+      openTaskModal(targetTaskId);
+    }
+
+    function buildTaskCard(todo, options = {}) {
+      const card = document.createElement("div");
+      card.className = "task-card";
+      const isDoneCard = Boolean(options.done || String(todo.status || "open") === "done");
+      if (isDoneCard) card.classList.add("done-card");
+      card.draggable = true;
+      card.dataset.taskId = todo.id;
+
+      const tags = Array.isArray(todo.tags) ? todo.tags : [];
+      const dueLabel = todo.due ? fmtDate(todo.due) : "No due date";
+      const categoryLabel = listName(todo.listId);
+
+      card.innerHTML = `
+        <div class="task-card-title" title="${escapeHtml(safeText(todo.title) || "Untitled task")}">${escapeHtml(safeText(todo.title) || "Untitled task")}</div>
+        <div class="task-card-meta">
+          <span>${escapeHtml(categoryLabel)}</span>
+          <span>${escapeHtml(dueLabel)}</span>
+        </div>
+        <div class="task-tags"></div>
+        <div class="task-actions">
+          <button type="button" class="ghost" data-action="open">Open</button>
+          <button type="button" class="ghost" data-action="context">Context</button>
+          <button type="button" class="ghost" data-action="complete">${isDoneCard ? "Reopen" : "Complete"}</button>
+          <button type="button" class="ghost" data-action="delete">Delete</button>
+        </div>
+      `;
+
+      const tagRow = card.querySelector(".task-tags");
+      const priorityChip = document.createElement("span");
+      priorityChip.className = `pill ${priorityClass(todo.priority)}`;
+      priorityChip.textContent = String(todo.priority || "medium").toUpperCase();
+      tagRow.appendChild(priorityChip);
+
+      tags.forEach(tag => {
+        const chip = document.createElement("span");
+        chip.className = "pill filter-chip";
+        chip.textContent = tag;
+        chip.title = `Filter board by category: ${tag}`;
+        const color = getTagColor(tag);
+        if (color) {
+          chip.style.background = `${color}33`;
+          chip.style.borderColor = color;
+          chip.style.color = "#fff";
+        }
+        chip.addEventListener("click", (evt) => {
+          evt.stopPropagation();
+          applyCategoryFilterFromCard(tag);
+        });
+        tagRow.appendChild(chip);
+      });
+
+      card.addEventListener("click", (evt) => {
+        if (evt.target?.closest("button")) return;
+        openTaskModal(todo.id);
+      });
+
+      card.querySelector('[data-action="open"]').addEventListener("click", (evt) => {
+        evt.stopPropagation();
+        openTaskModal(todo.id);
+      });
+      card.querySelector('[data-action="context"]').addEventListener("click", (evt) => {
+        evt.stopPropagation();
+        openTaskContext(todo.id);
+      });
+      card.querySelector('[data-action="complete"]').addEventListener("click", async (evt) => {
+        evt.stopPropagation();
+        await setTaskDoneFromCard(todo.id, !isDoneCard);
+      });
+      card.querySelector('[data-action="delete"]').addEventListener("click", async (evt) => {
+        evt.stopPropagation();
+        await deleteTaskFromCard(todo.id);
+      });
+
+      card.addEventListener("dragstart", () => {
+        state.dragTaskId = todo.id;
+        card.classList.add("dragging");
+      });
+
+      card.addEventListener("dragend", () => {
+        state.dragTaskId = "";
+        card.classList.remove("dragging");
+        document.querySelectorAll(".task-lane-body").forEach(lane => lane.classList.remove("drag-over"));
+      });
+
+      card.addEventListener("dragover", (evt) => {
+        evt.preventDefault();
+      });
+
+      card.addEventListener("drop", async (evt) => {
+        evt.preventDefault();
+        evt.stopPropagation();
+        const lane = card.closest(".task-lane-body");
+        if (!lane) return;
+        await moveTaskCard(state.dragTaskId, lane.dataset.listId, todo.id);
+      });
+
+      return card;
+    }
+
+    function renderTaskBoard() {
+      updateTaskFilterClearButtons();
+      const visibleTodos = sortTodos(filterTodos());
+      const visibleTodosIgnoringDateWindow = sortTodos(filterTodos({ ignoreDateWindow: true }));
+      const hiddenOlderCount = state.showHiddenOlder
+        ? 0
+        : Math.max(0, visibleTodosIgnoringDateWindow.length - visibleTodos.length);
+      const todosIgnoringStatus = sortTodos(filterTodos({ ignoreStatus: true }));
+      updateTaskWindowHint(hiddenOlderCount);
+      renderTaskStats(visibleTodos, hiddenOlderCount);
+      taskBoard.innerHTML = "";
+
+      const statusFilter = taskStatusFilter.value || "open";
+      const activeFilterColumn = taskCategoryFilter.value || "all";
+      const lanes = [];
+      const todosByListId = new Map();
+      const knownListIds = new Set(state.todoLists.map(item => item.id));
+
+      state.todoLists.forEach(item => {
+        todosByListId.set(item.id, []);
+      });
+
+      todosIgnoringStatus.forEach(todo => {
+        const key = todo.listId || "";
+        if (!todosByListId.has(key)) {
+          todosByListId.set(key, []);
+        }
+        todosByListId.get(key).push(todo);
+      });
+
+      state.todoLists.forEach(item => {
+        if (activeFilterColumn !== "all" && activeFilterColumn !== item.id) return;
+        lanes.push({
+          id: item.id,
+          label: item.name || "Column",
+          color: item.color || "#4f6b91",
+          items: todosByListId.get(item.id) || []
+        });
+      });
+
+      const unassignedItems = todosIgnoringStatus.filter(todo => !knownListIds.has(todo.listId || ""));
+      if (unassignedItems.length && activeFilterColumn === "all") {
+        lanes.push({
+          id: "",
+          label: "Unassigned",
+          color: "#5b7fb1",
+          items: unassignedItems
+        });
+      }
+
+      if (!lanes.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "No tasks match your current filters.";
+        taskBoard.appendChild(empty);
+        updateTaskNavControls();
+        return;
+      }
+
+      lanes.forEach((laneData) => {
+        const lane = document.createElement("section");
+        lane.className = "task-lane";
+        lane.dataset.listId = laneData.id || "";
+        const canReorderColumns = Boolean(laneData.id && activeFilterColumn === "all");
+        const laneSortOverride = getColumnSortMode(laneData.id);
+        const laneSortMode = laneSortOverride || (taskSortBy.value || TASK_FILTER_DEFAULTS.sortBy);
+        const laneItems = sortTodosByMode(laneData.items, laneSortMode);
+        if (canReorderColumns) {
+          lane.classList.add("reorderable");
+          lane.draggable = true;
+        }
+
+        const head = document.createElement("div");
+        head.className = "task-lane-head";
+        const title = document.createElement("div");
+        title.className = "lane-title";
+        title.innerHTML = `<span class="lane-dot" style="background:${laneData.color};"></span><span class="lane-label">${escapeHtml(laneData.label)}</span>`;
+        head.appendChild(title);
+
+        const headTools = document.createElement("div");
+        headTools.className = "lane-head-tools";
+
+        if (canReorderColumns) {
+          const dragHandle = document.createElement("span");
+          dragHandle.className = "lane-drag-handle";
+          dragHandle.title = "Drag to reorder columns";
+          dragHandle.textContent = "Drag";
+          headTools.appendChild(dragHandle);
+        }
+
+        const laneSortSelect = document.createElement("select");
+        laneSortSelect.className = "lane-sort-select";
+        laneSortSelect.setAttribute("aria-label", `Sort ${laneData.label || "column"}`);
+        laneSortSelect.innerHTML = `
+          <option value="">Date sort: global</option>
+          <option value="meeting_date_asc">Date A-Z</option>
+          <option value="meeting_date_desc">Date Z-A</option>
+        `;
+        laneSortSelect.value = laneSortOverride;
+        laneSortSelect.addEventListener("change", () => {
+          setColumnSortMode(laneData.id, laneSortSelect.value);
+        });
+        headTools.appendChild(laneSortSelect);
+
+        const laneCount = document.createElement("span");
+        laneCount.className = "pill";
+        laneCount.textContent = String(laneItems.length);
+        headTools.appendChild(laneCount);
+
+        head.appendChild(headTools);
+        lane.appendChild(head);
+
+        if (canReorderColumns) {
+          lane.addEventListener("dragstart", (evt) => {
+            if (evt.target?.closest(".task-card")) return;
+            if (!evt.target?.closest(".lane-drag-handle")) {
+              evt.preventDefault();
+              return;
+            }
+            state.dragLaneId = laneData.id;
+            lane.classList.add("dragging-column");
+          });
+
+          lane.addEventListener("dragover", (evt) => {
+            if (!state.dragLaneId || state.dragTaskId) return;
+            if (state.dragLaneId === laneData.id) return;
+            evt.preventDefault();
+            lane.classList.add("column-drop-target");
+          });
+
+          lane.addEventListener("dragleave", () => {
+            lane.classList.remove("column-drop-target");
+          });
+
+          lane.addEventListener("drop", async (evt) => {
+            if (!state.dragLaneId || state.dragTaskId) return;
+            evt.preventDefault();
+            lane.classList.remove("column-drop-target");
+            const movingLaneId = state.dragLaneId;
+            state.dragLaneId = "";
+            await moveColumn(movingLaneId, laneData.id);
+          });
+
+          lane.addEventListener("dragend", () => {
+            state.dragLaneId = "";
+            lane.classList.remove("dragging-column");
+            document.querySelectorAll(".task-lane").forEach(item => item.classList.remove("column-drop-target"));
+          });
+        }
+
+        const body = document.createElement("div");
+        body.className = "task-lane-body";
+        body.dataset.listId = laneData.id || "";
+
+        body.addEventListener("dragover", (evt) => {
+          if (!state.dragTaskId) return;
+          evt.preventDefault();
+          body.classList.add("drag-over");
+        });
+
+        body.addEventListener("dragleave", () => {
+          body.classList.remove("drag-over");
+        });
+
+        body.addEventListener("drop", async (evt) => {
+          if (!state.dragTaskId) return;
+          evt.preventDefault();
+          body.classList.remove("drag-over");
+          await moveTaskCard(state.dragTaskId, body.dataset.listId, "");
+        });
+
+        const doneItems = laneItems.filter(todo => String(todo.status || "open") === "done");
+        const openItems = laneItems.filter(todo => String(todo.status || "open") !== "done");
+        const openItemsToRender = statusFilter === "done" ? [] : openItems;
+
+        openItemsToRender.forEach(todo => body.appendChild(buildTaskCard(todo)));
+
+        if (!openItemsToRender.length && (!doneItems.length || statusFilter === "open")) {
+          const emptyState = document.createElement("div");
+          emptyState.className = "empty";
+          emptyState.textContent = "No open cards in this column.";
+          body.appendChild(emptyState);
+        }
+
+        if (doneItems.length) {
+          const doneSection = document.createElement("details");
+          doneSection.className = "done-section";
+          doneSection.open = true;
+
+          const summary = document.createElement("summary");
+          summary.textContent = `Completed (${doneItems.length})`;
+          doneSection.appendChild(summary);
+
+          const doneList = document.createElement("div");
+          doneList.className = "done-list";
+          doneItems.forEach(todo => doneList.appendChild(buildTaskCard(todo, { done: true })));
+          doneSection.appendChild(doneList);
+          body.appendChild(doneSection);
+        }
+
+        lane.appendChild(body);
+        taskBoard.appendChild(lane);
+      });
+
+      updateTaskNavControls();
+    }
+
+    async function moveTaskCard(taskId, targetListId, beforeTaskId = "") {
+      if (!taskId) return;
+      try {
+        await fetchJson("/api/todos/kanban/move", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            taskId,
+            targetListId: targetListId || null,
+            beforeTaskId: beforeTaskId || null
+          })
+        });
+        setTodoStatus("Card moved. Board state saved.");
+        await refreshTodos();
+      } catch (err) {
+        setTodoStatus(`Move failed: ${err.message || err}`, true);
+      }
+    }
+
+    async function setTaskDoneFromCard(taskId, done) {
+      if (!taskId) return;
+      try {
+        await fetchJson(`/api/todos/items/${encodeURIComponent(taskId)}/toggle`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ done: Boolean(done) })
+        });
+        setTodoStatus(done ? "Task marked complete." : "Task reopened.");
+        await refreshTodos();
+        if (state.currentTaskId && state.currentTaskId === taskId) {
+          openTaskModal(taskId);
+        }
+      } catch (err) {
+        setTodoStatus(`Status update failed: ${err.message || err}`, true);
+      }
+    }
+
+    async function deleteTaskFromCard(taskId) {
+      if (!taskId) return;
+      const todo = state.todos.find(item => item.id === taskId);
+      const title = safeText(todo?.title || "");
+      const prompt = title
+        ? `Delete task "${title}"? This cannot be undone.`
+        : "Delete this task? This cannot be undone.";
+      if (!window.confirm(prompt)) return;
+      try {
+        await fetchJson(`/api/todos/items/${encodeURIComponent(taskId)}`, {
+          method: "DELETE"
+        });
+        setTodoStatus("Task deleted.");
+        await refreshTodos();
+        if (state.currentTaskId && state.currentTaskId === taskId) {
+          closeTaskModal();
+        }
+      } catch (err) {
+        setTodoStatus(`Delete failed: ${err.message || err}`, true);
+      }
+    }
+
+    function openTaskModal(taskId = "") {
+      const modalSessionId = state.taskModalSessionId + 1;
+      state.taskModalSessionId = modalSessionId;
+      state.currentTaskId = taskId || "";
+      const todo = state.todos.find(item => item.id === taskId) || null;
+
+      taskFormTitle.value = todo?.title || "";
+      taskFormTitle.title = todo?.title || "";
+      taskFormCategory.value = todo?.listId || (taskFormCategory.options[0]?.value || "");
+      taskFormPriority.value = todo?.priority || "medium";
+      taskFormDue.value = toLocalInput(todo?.due);
+      taskFormReminder.value = toLocalInput(todo?.reminderAt);
+      taskFormRepeat.value = todo?.repeatRule || "";
+      taskFormTags.value = Array.isArray(todo?.tags) ? todo.tags.join(", ") : "";
+      taskFormSubtasks.value = Array.isArray(todo?.steps)
+        ? todo.steps.map(step => step?.title || step?.text || "").filter(Boolean).join("\n")
+        : "";
+      taskFormDetails.value = todo?.details || "";
+      taskFormNotes.value = todo?.notes || "";
+      const notesSnapshot = taskFormNotes.value;
+
+      if (todo?.id) {
+        applyCompactContextNote(todo.id, modalSessionId, notesSnapshot);
+      }
+
+      document.getElementById("taskModalTitle").textContent = todo ? "Edit Task Card" : "New Task Card";
+      document.getElementById("taskModalSubtitle").textContent = todo
+        ? `Task ID: ${todo.id}`
+        : "Create a new task card.";
+      toggleTaskStatusBtn.textContent = todo && String(todo.status) === "done" ? "Reopen Task" : "Mark Complete";
+      renderTagPalette();
+
+      // Ensure long titles are shown from the beginning when opening the modal.
+      taskFormTitle.scrollLeft = 0;
+      try {
+        taskFormTitle.setSelectionRange(0, 0);
+      } catch {
+        // setSelectionRange can fail for unsupported input states; ignore.
+      }
+
+      taskModalBackdrop.classList.add("open");
+      taskModalBackdrop.setAttribute("aria-hidden", "false");
+      updateTaskNavControls();
+    }
+
+    function closeTaskModal() {
+      taskModalBackdrop.classList.remove("open");
+      taskModalBackdrop.setAttribute("aria-hidden", "true");
+      state.currentTaskId = "";
+      state.taskModalSessionId += 1;
+      updateTaskNavControls();
+    }
+
+    function closeContextModal() {
+      contextModalBackdrop.classList.remove("open");
+      contextModalBackdrop.setAttribute("aria-hidden", "true");
+      contextAudio.pause();
+      contextAudio.removeAttribute("src");
+      contextAudio.load();
+    }
+
+    async function saveTaskFromModal() {
+      const payload = {
+        title: safeText(taskFormTitle.value),
+        listId: taskFormCategory.value || null,
+        priority: String(taskFormPriority.value || "medium").toLowerCase(),
+        due: fromLocalInput(taskFormDue.value),
+        reminderAt: fromLocalInput(taskFormReminder.value),
+        repeatRule: safeText(taskFormRepeat.value),
+        tags: parseCsv(taskFormTags.value),
+        steps: parseSteps(taskFormSubtasks.value),
+        details: safeText(taskFormDetails.value),
+        notes: safeText(taskFormNotes.value)
+      };
+
+      if (!payload.title) {
+        setTodoStatus("Task title is required.", true);
+        return;
+      }
+
+      try {
+        if (state.currentTaskId) {
+          await fetchJson(`/api/todos/items/${encodeURIComponent(state.currentTaskId)}`, {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          setTodoStatus("Task updated.");
+        } else {
+          await fetchJson("/api/todos/items", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          setTodoStatus("Task created.");
+        }
+        await refreshTodos();
+        closeTaskModal();
+      } catch (err) {
+        setTodoStatus(`Save failed: ${err.message || err}`, true);
+      }
+    }
+
+    async function toggleTaskStatusFromModal() {
+      if (!state.currentTaskId) {
+        setTodoStatus("Save the task before changing status.", true);
+        return;
+      }
+      const todo = state.todos.find(item => item.id === state.currentTaskId);
+      if (!todo) return;
+      const done = String(todo.status || "open") !== "done";
+      try {
+        await fetchJson(`/api/todos/items/${encodeURIComponent(state.currentTaskId)}/toggle`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ done })
+        });
+        setTodoStatus(done ? "Task marked complete." : "Task reopened.");
+        await refreshTodos();
+        openTaskModal(state.currentTaskId);
+      } catch (err) {
+        setTodoStatus(`Status update failed: ${err.message || err}`, true);
+      }
+    }
+
+    async function openTaskContext(taskId) {
+      try {
+        const result = await fetchJson(`/api/todos/context/${encodeURIComponent(taskId)}`);
+        const context = result.context;
+        contextLinks.innerHTML = "";
+        contextMeta.textContent = "";
+        contextSummary.textContent = "";
+        contextTranscript.textContent = "";
+        contextAudioBlock.style.display = "none";
+
+        if (!context) {
+          contextSubtitle.textContent = "No meeting reference found for this task yet.";
+          contextSummary.textContent = "No Fireflies context is linked to this task.";
+          contextTranscript.textContent = "";
+          contextModalBackdrop.classList.add("open");
+          contextModalBackdrop.setAttribute("aria-hidden", "false");
+          return;
+        }
+
+        contextSubtitle.textContent = `Context for: ${result.todo?.title || "Task"}`;
+        contextMeta.textContent =
+          `${context.title || "Meeting"} | ${fmtDate(context.occurredAt)} | Meeting ID: ${context.meetingId || "n/a"}`;
+
+        if (context.sourceUrl) {
+          const a = document.createElement("a");
+          a.href = context.sourceUrl;
+          a.target = "_blank";
+          a.rel = "noopener";
+          a.textContent = "Open Fireflies Meeting";
+          contextLinks.appendChild(a);
+        }
+
+        if (context.audio?.available && context.audio.url) {
+          const audioBtn = document.createElement("button");
+          audioBtn.type = "button";
+          audioBtn.textContent = "Play Linked Audio";
+          audioBtn.addEventListener("click", () => {
+            contextAudio.src = context.audio.url;
+            contextAudioBlock.style.display = "block";
+            contextAudio.play().catch(() => {});
+          });
+          contextLinks.appendChild(audioBtn);
+        }
+
+        const summary = context.summary || {};
+        const summaryLines = [];
+        if (context.taskBrief) summaryLines.push(`Task Focus: ${context.taskBrief}`);
+        if (context.taskNext && context.taskNext !== context.taskBrief) {
+          summaryLines.push(`Task Next: ${context.taskNext}`);
+        }
+        if (summary.tldr) summaryLines.push(`TL;DR: ${summary.tldr}`);
+        if (Array.isArray(summary.overview) && summary.overview.length) {
+          summaryLines.push("\nOverview:");
+          summary.overview.forEach(item => summaryLines.push(`- ${item}`));
+        }
+        if (Array.isArray(summary.decisions) && summary.decisions.length) {
+          summaryLines.push("\nDecisions:");
+          summary.decisions.forEach(item => summaryLines.push(`- ${item}`));
+        }
+        if (Array.isArray(summary.nextSteps) && summary.nextSteps.length) {
+          summaryLines.push("\nNext Steps:");
+          summary.nextSteps.forEach(item => summaryLines.push(`- ${item}`));
+        }
+        if (!summaryLines.length) summaryLines.push("No structured summary found.");
+        contextSummary.textContent = summaryLines.join("\n");
+
+        const transcript = context.transcript || {};
+        contextTranscript.textContent = transcript.available
+          ? `${transcript.preview || ""}\n\nTotal chars: ${transcript.totalChars || 0}`
+          : "Transcript not available for this meeting.";
+
+        contextModalBackdrop.classList.add("open");
+        contextModalBackdrop.setAttribute("aria-hidden", "false");
+      } catch (err) {
+        setTodoStatus(`Context lookup failed: ${err.message || err}`, true);
+      }
+    }
+
+    function setMeetingsStatus(message, isError = false) {
+      meetingsMessage.textContent = message || "";
+      meetingsMessage.className = isError ? "danger" : "muted";
+    }
+
+    function getSelectedMeeting() {
+      if (!state.selectedMeetingId) return null;
+      return state.meetings.find(item => String(item?.id || "") === String(state.selectedMeetingId || "")) || null;
+    }
+
+    function isMeetingReviewed(meetingOrId) {
+      const id = normalizeMeetingStorageId(
+        meetingOrId && typeof meetingOrId === "object"
+          ? meetingOrId?.id
+          : meetingOrId
+      );
+      return Boolean(id && state.reviewedMeetingIds.has(id));
+    }
+
+    function updateMeetingReviewButtons(meeting = getSelectedMeeting()) {
+      const id = normalizeMeetingStorageId(meeting?.id);
+      const reviewed = id ? isMeetingReviewed(id) : false;
+      meetingMarkReviewedBtn.disabled = !id || reviewed;
+      meetingMarkUnreviewedBtn.disabled = !id || !reviewed;
+    }
+
+    function setSelectedMeetingReviewed(reviewed) {
+      const meeting = getSelectedMeeting();
+      const meetingId = normalizeMeetingStorageId(meeting?.id);
+      if (!meetingId) {
+        setMeetingsStatus("Select a meeting first.", true);
+        return;
+      }
+      if (reviewed) state.reviewedMeetingIds.add(meetingId);
+      else state.reviewedMeetingIds.delete(meetingId);
+      saveReviewedMeetingIds();
+      renderMeetingsWorkbench();
+      setMeetingsStatus(reviewed ? "Meeting moved to reviewed." : "Meeting moved back to active review.");
+    }
+
+    function normalizeMeetingActionId(action, fallbackPrefix = "") {
+      const explicit = String(action?.id || "").trim();
+      if (explicit) return explicit;
+      const titleKey = String(action?.title || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      return `${fallbackPrefix || "meeting"}:${titleKey || "action"}`;
+    }
+
+    function normalizeSummaryLine(value) {
+      if (!value) return "";
+      if (typeof value === "string") return value.trim();
+      if (typeof value !== "object") return "";
+      return String(value?.text || value?.summary || value?.title || value?.task || value?.action || "").trim();
+    }
+
+    function buildMeetingListButton(meeting, reviewed = false) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "meeting-item";
+      if (reviewed) btn.classList.add("reviewed");
+      if (String(meeting?.id || "") === String(state.selectedMeetingId || "")) {
+        btn.classList.add("active");
+      }
+      const title = safeText(meeting?.title || "Fireflies Meeting");
+      const occurred = meeting?.occurredAt ? fmtDate(meeting.occurredAt) : "Unknown date";
+      const actionCount = Array.isArray(meeting?.actions) ? meeting.actions.length : 0;
+      btn.innerHTML = `
+        <div class="meeting-item-title">${escapeHtml(title)}</div>
+        <div class="meeting-item-meta">${escapeHtml(occurred)} | ${actionCount} action items${reviewed ? " | Reviewed" : ""}</div>
+      `;
+      btn.addEventListener("click", () => {
+        state.selectedMeetingId = String(meeting?.id || "");
+        renderMeetingsWorkbench();
+      });
+      return btn;
+    }
+
+    function renderMeetingsList() {
+      meetingsList.innerHTML = "";
+      if (!state.meetings.length) {
+        meetingsList.innerHTML = '<p class="empty">No meetings found yet. Run Fireflies sync first.</p>';
+        return;
+      }
+      const activeMeetings = [];
+      const reviewedMeetings = [];
+      state.meetings.forEach((meeting) => {
+        if (isMeetingReviewed(meeting)) reviewedMeetings.push(meeting);
+        else activeMeetings.push(meeting);
+      });
+
+      const activeList = document.createElement("div");
+      activeList.className = "meetings-open-list";
+      if (activeMeetings.length) {
+        activeMeetings.forEach((meeting) => {
+          activeList.appendChild(buildMeetingListButton(meeting, false));
+        });
+      } else {
+        activeList.innerHTML = '<p class="empty">All meetings are in reviewed.</p>';
+      }
+      meetingsList.appendChild(activeList);
+
+      if (reviewedMeetings.length) {
+        const reviewedSection = document.createElement("details");
+        reviewedSection.className = "meeting-reviewed-section";
+        reviewedSection.open = Boolean(state.meetingsReviewedExpanded);
+
+        reviewedSection.addEventListener("toggle", () => {
+          state.meetingsReviewedExpanded = Boolean(reviewedSection.open);
+          saveMeetingsReviewedExpandedSetting(state.meetingsReviewedExpanded);
+        });
+
+        const summary = document.createElement("summary");
+        summary.textContent = `Reviewed (${reviewedMeetings.length})`;
+        reviewedSection.appendChild(summary);
+
+        const reviewedList = document.createElement("div");
+        reviewedList.className = "meetings-reviewed-list";
+        reviewedMeetings.forEach((meeting) => {
+          reviewedList.appendChild(buildMeetingListButton(meeting, true));
+        });
+        reviewedSection.appendChild(reviewedList);
+        meetingsList.appendChild(reviewedSection);
+      }
+    }
+
+    function appendSummaryBlock(title, lines = []) {
+      const values = lines
+        .map(item => normalizeSummaryLine(item))
+        .filter(Boolean);
+      if (!values.length) return;
+      const block = document.createElement("div");
+      block.className = "meeting-summary-block";
+      const heading = document.createElement("h3");
+      heading.textContent = title;
+      block.appendChild(heading);
+      if (values.length === 1 && values[0].length <= 220) {
+        const p = document.createElement("p");
+        p.textContent = values[0];
+        block.appendChild(p);
+      } else {
+        const ul = document.createElement("ul");
+        values.forEach((line) => {
+          const li = document.createElement("li");
+          li.textContent = line;
+          ul.appendChild(li);
+        });
+        block.appendChild(ul);
+      }
+      meetingSummaryBlocks.appendChild(block);
+    }
+
+    function renderMeetingDetail(meeting) {
+      if (!meeting) {
+        meetingDetailTitle.textContent = "Select a meeting";
+        meetingDetailMeta.textContent = "Meeting summary and context appear here.";
+        meetingSummaryBlocks.innerHTML = '<p class="empty">Select a meeting on the left.</p>';
+        updateMeetingReviewButtons(null);
+        return;
+      }
+      meetingDetailTitle.textContent = safeText(meeting.title || "Fireflies Meeting");
+      meetingDetailMeta.textContent = `${meeting.occurredAt ? fmtDate(meeting.occurredAt) : "Unknown date"}${meeting.sourceUrl ? " | Source available" : ""}`;
+      meetingSummaryBlocks.innerHTML = "";
+
+      const summary = meeting.summary || {};
+      const tldr = normalizeSummaryLine(summary.tldr);
+      if (tldr) appendSummaryBlock("TL;DR", [tldr]);
+      appendSummaryBlock("Overview", Array.isArray(summary.overview) ? summary.overview : []);
+      appendSummaryBlock("Decisions", Array.isArray(summary.decisions) ? summary.decisions : []);
+      appendSummaryBlock("Action Items", Array.isArray(summary.actionItems) ? summary.actionItems : []);
+      appendSummaryBlock("Next Steps", Array.isArray(summary.nextSteps) ? summary.nextSteps : []);
+      if (meeting.transcriptPreview) {
+        appendSummaryBlock("Transcript Preview", [meeting.transcriptPreview]);
+      }
+      if (!meetingSummaryBlocks.children.length) {
+        meetingSummaryBlocks.innerHTML = '<p class="empty">No structured summary available for this meeting.</p>';
+      }
+      updateMeetingReviewButtons(meeting);
+    }
+
+    function updateMeetingActionStats() {
+      const total = state.meetings.reduce((sum, meeting) => (
+        sum + (Array.isArray(meeting?.actions) ? meeting.actions.length : 0)
+      ), 0);
+      const selected = state.selectedMeetingActionIds.size;
+      meetingActionStats.textContent = `${selected} selected | ${total} total action items`;
+    }
+
+    function openMeetingActionAsDraft(action, meeting) {
+      openTaskModal("");
+      taskFormTitle.value = action?.title || "";
+      const ownerTag = action?.owner
+        ? `owner:${String(action.owner || "").toLowerCase().replace(/\s+/g, "-")}`
+        : "";
+      const meetingIdTag = action?.meetingId ? `meeting-id:${action.meetingId}` : "";
+      const tags = ["fireflies", "meeting-action-item", ownerTag, meetingIdTag].filter(Boolean);
+      taskFormTags.value = tags.join(", ");
+      taskFormPriority.value = "medium";
+      taskFormDue.value = toLocalInput(action?.due || "");
+      taskFormDetails.value = [
+        action?.meetingId ? `Meeting ID: ${action.meetingId}` : "",
+        `Meeting: ${action?.meetingTitle || meeting?.title || "Fireflies Meeting"}`,
+        action?.occurredAt ? `Occurred: ${action.occurredAt}` : "",
+        action?.sourceUrl ? `Source: ${action.sourceUrl}` : ""
+      ].filter(Boolean).join("\n");
+      taskFormNotes.value = action?.notes || "";
+      document.getElementById("taskModalTitle").textContent = "Meeting Action Preview";
+      document.getElementById("taskModalSubtitle").textContent =
+        `Draft task from ${action?.meetingTitle || meeting?.title || "meeting"} (save to keep)`;
+    }
+
+    function renderMeetingActions(meeting) {
+      meetingActionsList.innerHTML = "";
+      if (!meeting || !Array.isArray(meeting.actions) || !meeting.actions.length) {
+        meetingActionsList.innerHTML = '<p class="empty">No action items found for this meeting.</p>';
+        updateMeetingActionStats();
+        return;
+      }
+
+      meeting.actions.forEach((action, index) => {
+        const actionId = normalizeMeetingActionId(action, `${meeting.id}:${index}`);
+        const card = document.createElement("div");
+        card.className = "meeting-action-card";
+
+        const isSelected = state.selectedMeetingActionIds.has(actionId);
+        const dueLabel = action?.due ? fmtDate(action.due) : "No due date";
+        const ownerLabel = safeText(action?.owner || "Unassigned");
+        const notes = safeText(action?.notes || "");
+
+        card.innerHTML = `
+          <div class="meeting-action-head">
+            <input type="checkbox" ${isSelected ? "checked" : ""} aria-label="Select action item">
+            <div class="meeting-action-title">${escapeHtml(safeText(action?.title || "Untitled action"))}</div>
+          </div>
+          <div class="task-card-meta">
+            <span>${escapeHtml(ownerLabel)}</span>
+            <span>${escapeHtml(dueLabel)}</span>
+          </div>
+          ${notes ? `<div class="meeting-action-notes">${escapeHtml(notes)}</div>` : ""}
+          <div class="task-actions">
+            <button type="button" class="ghost" data-action="open">Open</button>
+          </div>
+        `;
+
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) state.selectedMeetingActionIds.add(actionId);
+          else state.selectedMeetingActionIds.delete(actionId);
+          updateMeetingActionStats();
+        });
+
+        card.querySelector('[data-action="open"]').addEventListener("click", (evt) => {
+          evt.stopPropagation();
+          openMeetingActionAsDraft({ ...action, id: actionId }, meeting);
+        });
+
+        card.addEventListener("click", (evt) => {
+          if (evt.target?.closest("button") || evt.target?.closest("input")) return;
+          checkbox.checked = !checkbox.checked;
+          checkbox.dispatchEvent(new Event("change"));
+        });
+
+        meetingActionsList.appendChild(card);
+      });
+
+      updateMeetingActionStats();
+    }
+
+    function renderMeetingsWorkbench() {
+      renderMeetingsList();
+      const selected = getSelectedMeeting();
+      renderMeetingDetail(selected);
+      renderMeetingActions(selected);
+    }
+
+    async function refreshMeetingsWorkbench() {
+      setMeetingsStatus("Loading meetings and action items...");
+      try {
+        const result = await fetchJson("/api/fireflies/meetings/details?limit=400");
+        state.meetings = Array.isArray(result?.meetings) ? result.meetings : [];
+        state.meetingsLoaded = true;
+        if (!state.meetings.find(item => String(item?.id || "") === String(state.selectedMeetingId || ""))) {
+          state.selectedMeetingId = state.meetings[0]?.id || "";
+        }
+        renderMeetingsWorkbench();
+        setMeetingsStatus(
+          `Loaded ${state.meetings.length} meetings. Select action-item cards, then click Import To-Dos. ` +
+          `Use Mark Reviewed to gray/archive meetings at the bottom.`
+        );
+      } catch (err) {
+        state.meetingsLoaded = true;
+        state.meetings = [];
+        state.selectedMeetingId = "";
+        renderMeetingsWorkbench();
+        setMeetingsStatus(`Meetings load failed: ${err.message || err}`, true);
+      }
+    }
+
+    async function importSelectedMeetingActions() {
+      const allSelected = [];
+      const selectedMeetingIds = new Set();
+      for (const meeting of state.meetings) {
+        const actions = Array.isArray(meeting?.actions) ? meeting.actions : [];
+        for (let idx = 0; idx < actions.length; idx += 1) {
+          const action = actions[idx];
+          const actionId = normalizeMeetingActionId(action, `${meeting.id}:${idx}`);
+          if (!state.selectedMeetingActionIds.has(actionId)) continue;
+          const sourceMeetingId = normalizeMeetingStorageId(action.meetingId || meeting.id);
+          if (sourceMeetingId) selectedMeetingIds.add(sourceMeetingId);
+          allSelected.push({
+            id: actionId,
+            meetingId: action.meetingId || meeting.id,
+            meetingTitle: action.meetingTitle || meeting.title,
+            occurredAt: action.occurredAt || meeting.occurredAt || "",
+            sourceUrl: action.sourceUrl || meeting.sourceUrl || "",
+            title: action.title || "",
+            owner: action.owner || "",
+            due: action.due || "",
+            notes: action.notes || ""
+          });
+        }
+      }
+
+      if (!allSelected.length) {
+        setMeetingsStatus("Select at least one action-item card first.", true);
+        return;
+      }
+
+      setMeetingsStatus(`Importing ${allSelected.length} selected action items to Kanban...`);
+      try {
+        const result = await fetchJson("/api/todos/import/meeting-selections", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            items: allSelected,
+            hideExisting: true
+          })
+        });
+        state.selectedMeetingActionIds.clear();
+        let newlyReviewedCount = 0;
+        selectedMeetingIds.forEach((meetingId) => {
+          if (!meetingId || state.reviewedMeetingIds.has(meetingId)) return;
+          state.reviewedMeetingIds.add(meetingId);
+          newlyReviewedCount += 1;
+        });
+        if (newlyReviewedCount > 0) {
+          saveReviewedMeetingIds();
+        }
+        renderMeetingsWorkbench();
+        await refreshTaskWorkspace();
+        activateTab("tasks");
+        setTodoStatus(
+          `Imported selected to-dos: created ${result.createdCount || 0}, skipped ${result.skippedCount || 0}. ` +
+          `Existing cards hidden: ${result.hiddenCount || 0}.`
+        );
+        setMeetingsStatus(
+          `Import complete: created ${result.createdCount || 0}, skipped ${result.skippedCount || 0}. ` +
+          `Existing cards hidden: ${result.hiddenCount || 0}. ` +
+          `Meetings reviewed: ${selectedMeetingIds.size}.`
+        );
+      } catch (err) {
+        setMeetingsStatus(`Import failed: ${err.message || err}`, true);
+      }
+    }
+
+    function setGraphStatus(message, isError = false) {
+      graphMessage.textContent = message || "";
+      graphMessage.className = isError ? "danger" : "muted";
+    }
+
+    function graphTypeLabel(type) {
+      const key = String(type || "").toLowerCase();
+      if (key === "meeting") return "Meeting";
+      if (key === "action") return "Action";
+      if (key === "person") return "Person";
+      if (key === "topic") return "Topic";
+      return "Node";
+    }
+
+    function graphNodeColor(type) {
+      const key = String(type || "").toLowerCase();
+      if (key === "meeting") return "#9ec5ff";
+      if (key === "action") return "#2dd4bf";
+      if (key === "person") return "#f59e0b";
+      if (key === "topic") return "#8b5cf6";
+      return "#cbd5e1";
+    }
+
+    function graphLinkColor(type) {
+      const key = String(type || "").toLowerCase();
+      if (key === "related_meeting") return "rgba(147, 197, 253, 0.55)";
+      if (key === "meeting_action") return "rgba(45, 212, 191, 0.48)";
+      if (key === "meeting_participant" || key === "action_owner") return "rgba(245, 158, 11, 0.45)";
+      if (key === "meeting_topic") return "rgba(139, 92, 246, 0.42)";
+      return "rgba(148, 163, 184, 0.32)";
+    }
+
+    function graphTextContains(node, needle) {
+      if (!needle) return true;
+      const lowerNeedle = String(needle || "").toLowerCase();
+      const meta = node?.meta && typeof node.meta === "object" ? node.meta : {};
+      const metaText = Object.values(meta)
+        .flatMap(value => (Array.isArray(value) ? value : [value]))
+        .map(value => String(value || ""))
+        .join(" ")
+        .toLowerCase();
+      const base = `${String(node?.label || "").toLowerCase()} ${String(node?.id || "").toLowerCase()} ${metaText}`;
+      return base.includes(lowerNeedle);
+    }
+
+    function ensureGraphRuntime() {
+      if (state.graphRuntime) return state.graphRuntime;
+      const ctx = knowledgeGraphCanvas?.getContext("2d");
+      const runtime = {
+        canvas: knowledgeGraphCanvas,
+        ctx,
+        dpr: Math.max(1, window.devicePixelRatio || 1),
+        nodes: [],
+        links: [],
+        nodeById: new Map(),
+        adjacency: new Map(),
+        view: { x: 0, y: 0, scale: 1 },
+        selectedNodeId: "",
+        selectedLinkId: "",
+        hoveredNodeId: "",
+        hoveredLinkId: "",
+        pointerMode: "",
+        pointerDown: null,
+        draggingNodeId: "",
+        panning: false,
+        simulationAlpha: 0,
+        raf: 0,
+        activePointer: null,
+        resizeObserver: null
+      };
+
+      if (!ctx || !knowledgeGraphCanvas) {
+        state.graphRuntime = runtime;
+        return runtime;
+      }
+
+      const getMousePos = (evt) => {
+        const rect = runtime.canvas.getBoundingClientRect();
+        return {
+          x: evt.clientX - rect.left,
+          y: evt.clientY - rect.top
+        };
+      };
+
+      const toWorld = (screen) => ({
+        x: (screen.x - runtime.view.x) / runtime.view.scale,
+        y: (screen.y - runtime.view.y) / runtime.view.scale
+      });
+
+      const findNodeAt = (screen) => {
+        const point = toWorld(screen);
+        for (let i = runtime.nodes.length - 1; i >= 0; i -= 1) {
+          const node = runtime.nodes[i];
+          const dx = point.x - node.x;
+          const dy = point.y - node.y;
+          const r = (Number(node.size || 6) + 3);
+          if ((dx * dx + dy * dy) <= (r * r)) return node;
+        }
+        return null;
+      };
+
+      const distanceToSegment = (px, py, ax, ay, bx, by) => {
+        const abx = bx - ax;
+        const aby = by - ay;
+        const lenSq = abx * abx + aby * aby;
+        if (!lenSq) return Math.hypot(px - ax, py - ay);
+        let t = ((px - ax) * abx + (py - ay) * aby) / lenSq;
+        t = Math.max(0, Math.min(1, t));
+        const cx = ax + abx * t;
+        const cy = ay + aby * t;
+        return Math.hypot(px - cx, py - cy);
+      };
+
+      const findLinkAt = (screen) => {
+        const point = toWorld(screen);
+        let best = null;
+        let bestDist = Number.POSITIVE_INFINITY;
+        for (const link of runtime.links) {
+          const source = runtime.nodeById.get(link.source);
+          const target = runtime.nodeById.get(link.target);
+          if (!source || !target) continue;
+          const dist = distanceToSegment(point.x, point.y, source.x, source.y, target.x, target.y);
+          if (dist < 4 && dist < bestDist) {
+            best = link;
+            bestDist = dist;
+          }
+        }
+        return best;
+      };
+
+      const updateHover = (screen) => {
+        const node = findNodeAt(screen);
+        runtime.hoveredNodeId = node?.id || "";
+        runtime.hoveredLinkId = "";
+        if (!node) {
+          const link = findLinkAt(screen);
+          runtime.hoveredLinkId = link?.id || "";
+        }
+        if (runtime.hoveredNodeId) {
+          const hovered = runtime.nodeById.get(runtime.hoveredNodeId);
+          graphHoverHint.textContent = `${graphTypeLabel(hovered?.type)}: ${hovered?.label || ""}`;
+        } else if (runtime.hoveredLinkId) {
+          const hovered = runtime.links.find(item => item.id === runtime.hoveredLinkId);
+          graphHoverHint.textContent = `Link: ${hovered?.type || "related"} (${hovered?.weight || 1})`;
+        } else {
+          graphHoverHint.textContent = "Drag to pan, scroll to zoom, click nodes/links for details.";
+        }
+      };
+
+      runtime.canvas.addEventListener("mousedown", (evt) => {
+        if (state.activeTab !== "graph") return;
+        const screen = getMousePos(evt);
+        updateHover(screen);
+        runtime.pointerDown = {
+          screen,
+          at: Date.now(),
+          moved: false
+        };
+        const node = findNodeAt(screen);
+        if (node) {
+          runtime.draggingNodeId = node.id;
+          runtime.pointerMode = "drag-node";
+          runtime.canvas.style.cursor = "grabbing";
+          return;
+        }
+        runtime.panning = true;
+        runtime.pointerMode = "pan";
+        runtime.activePointer = screen;
+        graphCanvasWrap.classList.add("dragging");
+      });
+
+      window.addEventListener("mousemove", (evt) => {
+        if (state.activeTab !== "graph") return;
+        const screen = getMousePos(evt);
+        const down = runtime.pointerDown;
+        if (down) {
+          const moveDist = Math.hypot(screen.x - down.screen.x, screen.y - down.screen.y);
+          if (moveDist > 3) down.moved = true;
+        }
+        if (runtime.draggingNodeId) {
+          const point = toWorld(screen);
+          const node = runtime.nodeById.get(runtime.draggingNodeId);
+          if (node) {
+            node.x = point.x;
+            node.y = point.y;
+            node.vx = 0;
+            node.vy = 0;
+            runtime.simulationAlpha = Math.max(runtime.simulationAlpha, 0.25);
+            renderKnowledgeGraph();
+          }
+          return;
+        }
+        if (runtime.panning && runtime.activePointer) {
+          const dx = screen.x - runtime.activePointer.x;
+          const dy = screen.y - runtime.activePointer.y;
+          runtime.view.x += dx;
+          runtime.view.y += dy;
+          runtime.activePointer = screen;
+          renderKnowledgeGraph();
+          return;
+        }
+        updateHover(screen);
+        renderKnowledgeGraph();
+      });
+
+      window.addEventListener("mouseup", (evt) => {
+        if (state.activeTab !== "graph") return;
+        const screen = getMousePos(evt);
+        const wasDraggingNode = Boolean(runtime.draggingNodeId);
+        const wasPanning = runtime.panning;
+        runtime.draggingNodeId = "";
+        runtime.panning = false;
+        runtime.pointerMode = "";
+        runtime.activePointer = null;
+        runtime.canvas.style.cursor = "grab";
+        graphCanvasWrap.classList.remove("dragging");
+
+        if (!runtime.pointerDown) return;
+        const down = runtime.pointerDown;
+        runtime.pointerDown = null;
+        const elapsed = Date.now() - down.at;
+        if (down.moved || elapsed > 420 || wasDraggingNode || wasPanning) return;
+
+        updateHover(screen);
+        if (runtime.hoveredNodeId) {
+          selectGraphNode(runtime.hoveredNodeId, { openModal: true });
+          return;
+        }
+        if (runtime.hoveredLinkId) {
+          selectGraphLink(runtime.hoveredLinkId, { openModal: true });
+          return;
+        }
+        runtime.selectedNodeId = "";
+        runtime.selectedLinkId = "";
+        renderGraphSelectionMeta();
+        renderGraphDecisionTree();
+        renderKnowledgeGraph();
+      });
+
+      runtime.canvas.addEventListener("wheel", (evt) => {
+        if (state.activeTab !== "graph") return;
+        evt.preventDefault();
+        const screen = getMousePos(evt);
+        const worldBefore = toWorld(screen);
+        const zoom = evt.deltaY < 0 ? 1.08 : 0.92;
+        runtime.view.scale = Math.max(0.25, Math.min(4.5, runtime.view.scale * zoom));
+        runtime.view.x = screen.x - (worldBefore.x * runtime.view.scale);
+        runtime.view.y = screen.y - (worldBefore.y * runtime.view.scale);
+        renderKnowledgeGraph();
+      }, { passive: false });
+
+      if (typeof ResizeObserver === "function") {
+        runtime.resizeObserver = new ResizeObserver(() => {
+          ensureKnowledgeGraphCanvasSize();
+          renderKnowledgeGraph();
+        });
+        runtime.resizeObserver.observe(graphCanvasWrap);
+      }
+
+      state.graphRuntime = runtime;
+      return runtime;
+    }
+
+    function ensureKnowledgeGraphCanvasSize() {
+      const runtime = ensureGraphRuntime();
+      if (!runtime?.canvas || !graphCanvasWrap) return;
+      const rect = graphCanvasWrap.getBoundingClientRect();
+      const width = Math.max(320, Math.floor(rect.width));
+      const height = Math.max(260, Math.floor(rect.height));
+      runtime.dpr = Math.max(1, window.devicePixelRatio || 1);
+      const pixelWidth = Math.floor(width * runtime.dpr);
+      const pixelHeight = Math.floor(height * runtime.dpr);
+      if (runtime.canvas.width !== pixelWidth || runtime.canvas.height !== pixelHeight) {
+        runtime.canvas.width = pixelWidth;
+        runtime.canvas.height = pixelHeight;
+      }
+      runtime.canvas.style.width = `${width}px`;
+      runtime.canvas.style.height = `${height}px`;
+      if (!Number.isFinite(runtime.view.x) || !Number.isFinite(runtime.view.y)) {
+        runtime.view.x = width / 2;
+        runtime.view.y = height / 2;
+      }
+      if (!runtime.view.x && !runtime.view.y) {
+        runtime.view.x = width / 2;
+        runtime.view.y = height / 2;
+      }
+    }
+
+    function buildFilteredGraph() {
+      const fullNodes = Array.isArray(state.graphData?.nodes) ? state.graphData.nodes : [];
+      const fullLinks = Array.isArray(state.graphData?.links) ? state.graphData.links : [];
+      const nodeById = new Map(fullNodes.map(node => [node.id, node]));
+      const filterType = String(graphNodeTypeFilter.value || "all").toLowerCase();
+      const searchValue = String(graphSearch.value || "").trim().toLowerCase();
+      state.graphNodeFilter = filterType;
+      state.graphSearchTerm = searchValue;
+
+      let includeIds = new Set(fullNodes.map(node => node.id));
+      if (filterType !== "all") {
+        const focusIds = new Set(fullNodes.filter(node => String(node?.type || "").toLowerCase() === filterType).map(node => node.id));
+        const next = new Set(focusIds);
+        fullLinks.forEach((link) => {
+          if (focusIds.has(link.source) || focusIds.has(link.target)) {
+            next.add(link.source);
+            next.add(link.target);
+          }
+        });
+        includeIds = next;
+      }
+
+      if (searchValue) {
+        const matchIds = new Set(fullNodes.filter(node => graphTextContains(node, searchValue)).map(node => node.id));
+        const next = new Set(matchIds);
+        fullLinks.forEach((link) => {
+          if (matchIds.has(link.source) || matchIds.has(link.target)) {
+            next.add(link.source);
+            next.add(link.target);
+          }
+        });
+        includeIds = includeIds.size
+          ? new Set(Array.from(includeIds).filter(id => next.has(id)))
+          : next;
+      }
+
+      const nodes = fullNodes.filter(node => includeIds.has(node.id));
+      const links = fullLinks.filter(link => includeIds.has(link.source) && includeIds.has(link.target));
+      return { nodes, links };
+    }
+
+    function rebuildGraphAdjacency() {
+      const runtime = ensureGraphRuntime();
+      runtime.adjacency = new Map();
+      runtime.nodes.forEach((node) => {
+        runtime.adjacency.set(node.id, []);
+      });
+      runtime.links.forEach((link) => {
+        if (!runtime.adjacency.has(link.source)) runtime.adjacency.set(link.source, []);
+        if (!runtime.adjacency.has(link.target)) runtime.adjacency.set(link.target, []);
+        runtime.adjacency.get(link.source).push({
+          nodeId: link.target,
+          linkId: link.id,
+          weight: Number(link.weight || 1),
+          type: link.type
+        });
+        runtime.adjacency.get(link.target).push({
+          nodeId: link.source,
+          linkId: link.id,
+          weight: Number(link.weight || 1),
+          type: link.type
+        });
+      });
+    }
+
+    function renderGraphMetaItems(container, entries = []) {
+      container.innerHTML = "";
+      entries.forEach((entry) => {
+        const row = document.createElement("div");
+        row.className = "graph-meta-item";
+        row.innerHTML = `
+          <div class="k">${escapeHtml(entry.k || "")}</div>
+          <div class="v">${escapeHtml(entry.v || "")}</div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function selectGraphNode(nodeId, { openModal = false } = {}) {
+      const runtime = ensureGraphRuntime();
+      runtime.selectedNodeId = String(nodeId || "");
+      runtime.selectedLinkId = "";
+      renderGraphSelectionMeta();
+      renderGraphDecisionTree();
+      renderKnowledgeGraph();
+      if (openModal) openGraphDetailModalForSelection();
+    }
+
+    function selectGraphLink(linkId, { openModal = false } = {}) {
+      const runtime = ensureGraphRuntime();
+      runtime.selectedLinkId = String(linkId || "");
+      runtime.selectedNodeId = "";
+      renderGraphSelectionMeta();
+      renderGraphDecisionTree();
+      renderKnowledgeGraph();
+      if (openModal) openGraphDetailModalForSelection();
+    }
+
+    function openGraphNodeById(nodeId) {
+      const runtime = ensureGraphRuntime();
+      const node = runtime.nodeById.get(nodeId);
+      if (!node) return;
+      runtime.selectedNodeId = node.id;
+      runtime.selectedLinkId = "";
+      runtime.view.x = (graphCanvasWrap.clientWidth / 2) - (node.x * runtime.view.scale);
+      runtime.view.y = (graphCanvasWrap.clientHeight / 2) - (node.y * runtime.view.scale);
+      renderGraphSelectionMeta();
+      renderGraphDecisionTree();
+      renderKnowledgeGraph();
+    }
+
+    function renderGraphSelectionMeta() {
+      const runtime = ensureGraphRuntime();
+      const selectedNode = runtime.selectedNodeId ? runtime.nodeById.get(runtime.selectedNodeId) : null;
+      const selectedLink = runtime.selectedLinkId
+        ? runtime.links.find(item => item.id === runtime.selectedLinkId) || null
+        : null;
+
+      if (selectedNode) {
+        const metaEntries = [
+          { k: "Type", v: graphTypeLabel(selectedNode.type) },
+          { k: "Label", v: selectedNode.label || "" },
+          { k: "Node ID", v: selectedNode.id },
+          { k: "Connected", v: String((runtime.adjacency.get(selectedNode.id) || []).length) }
+        ];
+        const meta = selectedNode.meta && typeof selectedNode.meta === "object" ? selectedNode.meta : {};
+        Object.entries(meta).forEach(([key, value]) => {
+          if (value === null || value === undefined || value === "") return;
+          const rendered = Array.isArray(value) ? value.join(", ") : String(value);
+          metaEntries.push({ k: key, v: rendered });
+        });
+        renderGraphMetaItems(graphSelectionMeta, metaEntries);
+        graphSelectionHint.textContent = `Selected ${graphTypeLabel(selectedNode.type)} node.`;
+        return;
+      }
+
+      if (selectedLink) {
+        const source = runtime.nodeById.get(selectedLink.source);
+        const target = runtime.nodeById.get(selectedLink.target);
+        const entries = [
+          { k: "Type", v: selectedLink.type || "related" },
+          { k: "Weight", v: String(selectedLink.weight || 1) },
+          { k: "From", v: source?.label || selectedLink.source },
+          { k: "To", v: target?.label || selectedLink.target }
+        ];
+        if (Array.isArray(selectedLink?.meta?.reasons) && selectedLink.meta.reasons.length) {
+          entries.push({ k: "Reasons", v: selectedLink.meta.reasons.join("; ") });
+        }
+        if (selectedLink?.meta?.relation) {
+          entries.push({ k: "Relation", v: selectedLink.meta.relation });
+        }
+        renderGraphMetaItems(graphSelectionMeta, entries);
+        graphSelectionHint.textContent = "Selected relationship link.";
+        return;
+      }
+
+      graphSelectionMeta.innerHTML = "";
+      graphSelectionHint.textContent = "Click a node or link on the graph canvas.";
+    }
+
+    function renderGraphDecisionTree() {
+      const runtime = ensureGraphRuntime();
+      graphDecisionTree.innerHTML = "";
+      const selectedNode = runtime.selectedNodeId ? runtime.nodeById.get(runtime.selectedNodeId) : null;
+      if (!selectedNode) {
+        graphDecisionHint.textContent = "Select a node to see related navigation paths.";
+        return;
+      }
+      const neighbors = Array.isArray(runtime.adjacency.get(selectedNode.id))
+        ? [...runtime.adjacency.get(selectedNode.id)]
+        : [];
+      if (!neighbors.length) {
+        graphDecisionHint.textContent = "No linked neighbors for this node.";
+        return;
+      }
+      graphDecisionHint.textContent =
+        `${selectedNode.label} has ${neighbors.length} direct connections. Choose a branch to navigate.`;
+
+      const grouped = new Map();
+      neighbors.forEach((edge) => {
+        const node = runtime.nodeById.get(edge.nodeId);
+        if (!node) return;
+        const key = String(node.type || "unknown");
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push({ node, edge });
+      });
+
+      Array.from(grouped.entries())
+        .sort((a, b) => b[1].length - a[1].length)
+        .forEach(([type, entries]) => {
+          const group = document.createElement("div");
+          group.className = "graph-decision-group";
+          const title = document.createElement("div");
+          title.className = "graph-decision-title";
+          title.textContent = `${graphTypeLabel(type)} (${entries.length})`;
+          group.appendChild(title);
+          const options = document.createElement("div");
+          options.className = "graph-decision-options";
+          entries
+            .sort((a, b) => b.edge.weight - a.edge.weight)
+            .slice(0, 10)
+            .forEach(({ node, edge }) => {
+              const btn = document.createElement("button");
+              btn.type = "button";
+              btn.className = "graph-decision-btn";
+              btn.textContent = `${node.label} (${Math.round(edge.weight || 1)})`;
+              btn.title = `${graphTypeLabel(node.type)} | weight ${Math.round(edge.weight || 1)}`;
+              btn.addEventListener("click", () => {
+                openGraphNodeById(node.id);
+              });
+              options.appendChild(btn);
+            });
+          group.appendChild(options);
+          graphDecisionTree.appendChild(group);
+        });
+    }
+
+    function openGraphDetailModalForSelection() {
+      const runtime = ensureGraphRuntime();
+      const selectedNode = runtime.selectedNodeId ? runtime.nodeById.get(runtime.selectedNodeId) : null;
+      const selectedLink = runtime.selectedLinkId
+        ? runtime.links.find(item => item.id === runtime.selectedLinkId) || null
+        : null;
+      graphDetailMeta.innerHTML = "";
+      graphDetailConnections.innerHTML = "";
+
+      if (selectedNode) {
+        graphDetailTitle.textContent = `${graphTypeLabel(selectedNode.type)} Detail`;
+        graphDetailSubtitle.textContent = selectedNode.label || selectedNode.id;
+        const entries = [
+          { k: "Type", v: graphTypeLabel(selectedNode.type) },
+          { k: "Node ID", v: selectedNode.id }
+        ];
+        const meta = selectedNode.meta && typeof selectedNode.meta === "object" ? selectedNode.meta : {};
+        Object.entries(meta).forEach(([key, value]) => {
+          if (value === null || value === undefined || value === "") return;
+          entries.push({
+            k: key,
+            v: Array.isArray(value) ? value.join(", ") : String(value)
+          });
+        });
+        renderGraphMetaItems(graphDetailMeta, entries);
+
+        const neighbors = Array.isArray(runtime.adjacency.get(selectedNode.id))
+          ? [...runtime.adjacency.get(selectedNode.id)]
+          : [];
+        const sourceUrl = String(meta?.sourceUrl || "").trim();
+        if (sourceUrl) {
+          const link = document.createElement("a");
+          link.href = sourceUrl;
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.textContent = "Open source meeting";
+          graphDetailConnections.appendChild(link);
+        }
+        neighbors
+          .sort((a, b) => b.weight - a.weight)
+          .slice(0, 18)
+          .forEach((neighbor) => {
+            const linkedNode = runtime.nodeById.get(neighbor.nodeId);
+            if (!linkedNode) return;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = `${graphTypeLabel(linkedNode.type)}: ${linkedNode.label}`;
+            btn.addEventListener("click", () => {
+              openGraphNodeById(linkedNode.id);
+              graphDetailModalBackdrop.classList.remove("open");
+              graphDetailModalBackdrop.setAttribute("aria-hidden", "true");
+            });
+            graphDetailConnections.appendChild(btn);
+          });
+      } else if (selectedLink) {
+        const source = runtime.nodeById.get(selectedLink.source);
+        const target = runtime.nodeById.get(selectedLink.target);
+        graphDetailTitle.textContent = "Relationship Detail";
+        graphDetailSubtitle.textContent = `${source?.label || selectedLink.source} -> ${target?.label || selectedLink.target}`;
+        const entries = [
+          { k: "Type", v: selectedLink.type || "related" },
+          { k: "Weight", v: String(selectedLink.weight || 1) },
+          { k: "From", v: source?.label || selectedLink.source },
+          { k: "To", v: target?.label || selectedLink.target }
+        ];
+        if (selectedLink?.meta?.relation) entries.push({ k: "Relation", v: selectedLink.meta.relation });
+        if (Array.isArray(selectedLink?.meta?.reasons) && selectedLink.meta.reasons.length) {
+          entries.push({ k: "Reasons", v: selectedLink.meta.reasons.join("; ") });
+        }
+        renderGraphMetaItems(graphDetailMeta, entries);
+        [source, target].filter(Boolean).forEach((node) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.textContent = `${graphTypeLabel(node.type)}: ${node.label}`;
+          btn.addEventListener("click", () => {
+            openGraphNodeById(node.id);
+            graphDetailModalBackdrop.classList.remove("open");
+            graphDetailModalBackdrop.setAttribute("aria-hidden", "true");
+          });
+          graphDetailConnections.appendChild(btn);
+        });
+      } else {
+        graphDetailTitle.textContent = "Graph Detail";
+        graphDetailSubtitle.textContent = "No selection yet.";
+      }
+
+      graphDetailModalBackdrop.classList.add("open");
+      graphDetailModalBackdrop.setAttribute("aria-hidden", "false");
+    }
+
+    function closeGraphDetailModal() {
+      graphDetailModalBackdrop.classList.remove("open");
+      graphDetailModalBackdrop.setAttribute("aria-hidden", "true");
+    }
+
+    function initializeKnowledgeGraphLayout(keepPositions = true) {
+      const runtime = ensureGraphRuntime();
+      const width = Math.max(320, graphCanvasWrap.clientWidth || 900);
+      const height = Math.max(260, graphCanvasWrap.clientHeight || 560);
+      const old = keepPositions
+        ? new Map(runtime.nodes.map(node => [node.id, { x: node.x, y: node.y }]))
+        : new Map();
+
+      const filtered = buildFilteredGraph();
+      runtime.nodeById = new Map();
+      runtime.nodes = filtered.nodes.map((node) => {
+        const existing = old.get(node.id);
+        const type = String(node?.type || "").toLowerCase();
+        const cluster = type === "meeting"
+          ? { x: 0, y: 0 }
+          : type === "action"
+            ? { x: 210, y: -10 }
+            : type === "person"
+              ? { x: -220, y: 90 }
+              : { x: 0, y: -220 };
+        const placed = {
+          ...node,
+          x: existing?.x ?? (cluster.x + ((Math.random() - 0.5) * 260)),
+          y: existing?.y ?? (cluster.y + ((Math.random() - 0.5) * 240)),
+          vx: 0,
+          vy: 0
+        };
+        runtime.nodeById.set(placed.id, placed);
+        return placed;
+      });
+      runtime.links = filtered.links.map(link => ({
+        ...link,
+        ideal: link.type === "related_meeting" ? 190 : (link.type === "meeting_action" ? 120 : 145),
+        strength: link.type === "related_meeting" ? 0.012 : 0.02
+      }));
+      runtime.simulationAlpha = runtime.nodes.length ? 1 : 0;
+
+      if (!keepPositions || !runtime.view.scale) {
+        runtime.view.scale = 1;
+        runtime.view.x = width / 2;
+        runtime.view.y = height / 2;
+      }
+      rebuildGraphAdjacency();
+      if (runtime.selectedNodeId && !runtime.nodeById.has(runtime.selectedNodeId)) runtime.selectedNodeId = "";
+      if (runtime.selectedLinkId && !runtime.links.find(link => link.id === runtime.selectedLinkId)) runtime.selectedLinkId = "";
+      renderGraphSelectionMeta();
+      renderGraphDecisionTree();
+    }
+
+    function stepKnowledgeGraphSimulation() {
+      const runtime = ensureGraphRuntime();
+      if (!runtime.nodes.length) return;
+      const alpha = runtime.simulationAlpha;
+      if (alpha <= 0.0008) return;
+
+      const repulsion = 4300 * alpha;
+      const nodes = runtime.nodes;
+      if (nodes.length > 380) {
+        const interactions = Math.min(26000, nodes.length * 85);
+        for (let n = 0; n < interactions; n += 1) {
+          const i = Math.floor(Math.random() * nodes.length);
+          let j = Math.floor(Math.random() * nodes.length);
+          if (i === j) j = (j + 1) % nodes.length;
+          const a = nodes[i];
+          const b = nodes[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const distSq = (dx * dx) + (dy * dy) + 0.1;
+          const dist = Math.sqrt(distSq);
+          if (dist > 360) continue;
+          const force = repulsion / distSq;
+          const fx = (dx / dist) * force;
+          const fy = (dy / dist) * force;
+          a.vx += fx;
+          a.vy += fy;
+          b.vx -= fx;
+          b.vy -= fy;
+        }
+      } else {
+        for (let i = 0; i < nodes.length; i += 1) {
+          const a = nodes[i];
+          for (let j = i + 1; j < nodes.length; j += 1) {
+            const b = nodes[j];
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const distSq = (dx * dx) + (dy * dy) + 0.1;
+            const dist = Math.sqrt(distSq);
+            if (dist > 360) continue;
+            const force = repulsion / distSq;
+            const fx = (dx / dist) * force;
+            const fy = (dy / dist) * force;
+            a.vx += fx;
+            a.vy += fy;
+            b.vx -= fx;
+            b.vy -= fy;
+          }
+        }
+      }
+
+      runtime.links.forEach((link) => {
+        const source = runtime.nodeById.get(link.source);
+        const target = runtime.nodeById.get(link.target);
+        if (!source || !target) return;
+        const dx = target.x - source.x;
+        const dy = target.y - source.y;
+        const dist = Math.max(0.001, Math.hypot(dx, dy));
+        const desired = Number(link.ideal || 140);
+        const diff = dist - desired;
+        const force = diff * Number(link.strength || 0.02) * alpha;
+        const fx = (dx / dist) * force;
+        const fy = (dy / dist) * force;
+        source.vx += fx;
+        source.vy += fy;
+        target.vx -= fx;
+        target.vy -= fy;
+      });
+
+      nodes.forEach((node) => {
+        if (runtime.draggingNodeId && runtime.draggingNodeId === node.id) return;
+        node.vx += (-node.x) * 0.0009 * alpha;
+        node.vy += (-node.y) * 0.0009 * alpha;
+        node.vx *= 0.87;
+        node.vy *= 0.87;
+        node.x += node.vx;
+        node.y += node.vy;
+      });
+
+      runtime.simulationAlpha *= 0.985;
+    }
+
+    function drawKnowledgeGraph() {
+      const runtime = ensureGraphRuntime();
+      if (!runtime?.ctx || !runtime?.canvas) return;
+      const width = runtime.canvas.width / runtime.dpr;
+      const height = runtime.canvas.height / runtime.dpr;
+      const ctx = runtime.ctx;
+
+      ctx.setTransform(runtime.dpr, 0, 0, runtime.dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#081829";
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.save();
+      ctx.translate(runtime.view.x, runtime.view.y);
+      ctx.scale(runtime.view.scale, runtime.view.scale);
+
+      const selectedNodeId = runtime.selectedNodeId;
+      const selectedLinkId = runtime.selectedLinkId;
+      const hoveredNodeId = runtime.hoveredNodeId;
+      const hoveredLinkId = runtime.hoveredLinkId;
+
+      runtime.links.forEach((link) => {
+        const source = runtime.nodeById.get(link.source);
+        const target = runtime.nodeById.get(link.target);
+        if (!source || !target) return;
+        const isSelected = selectedLinkId === link.id;
+        const isHovered = hoveredLinkId === link.id;
+        const baseWidth = Math.min(3.4, 0.55 + ((Number(link.weight || 1) * 0.18)));
+        ctx.strokeStyle = graphLinkColor(link.type);
+        ctx.lineWidth = isSelected ? (baseWidth + 1.8) : isHovered ? (baseWidth + 0.8) : baseWidth;
+        ctx.beginPath();
+        ctx.moveTo(source.x, source.y);
+        ctx.lineTo(target.x, target.y);
+        ctx.stroke();
+      });
+
+      runtime.nodes.forEach((node) => {
+        const isSelected = selectedNodeId === node.id;
+        const isHovered = hoveredNodeId === node.id;
+        const radius = Math.max(4, Number(node.size || 6));
+        ctx.beginPath();
+        ctx.fillStyle = graphNodeColor(node.type);
+        ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = isSelected ? 2.6 : isHovered ? 1.8 : 1;
+        ctx.strokeStyle = isSelected ? "#ffffff" : isHovered ? "#d9e8ff" : "rgba(255,255,255,0.28)";
+        ctx.stroke();
+      });
+
+      const labelNodes = runtime.nodes.filter((node) => {
+        if (selectedNodeId === node.id || hoveredNodeId === node.id) return true;
+        if (runtime.nodes.length <= 90 && node.degree >= 4) return true;
+        return false;
+      });
+      ctx.font = "12px IBM Plex Sans, sans-serif";
+      ctx.textBaseline = "top";
+      labelNodes.forEach((node) => {
+        const label = String(node.label || "");
+        if (!label) return;
+        const radius = Math.max(4, Number(node.size || 6));
+        const w = Math.min(280, (ctx.measureText(label).width + 12));
+        ctx.fillStyle = "rgba(8, 20, 40, 0.78)";
+        ctx.fillRect(node.x + radius + 4, node.y - 10, w, 18);
+        ctx.fillStyle = "#e9f2ff";
+        ctx.fillText(label, node.x + radius + 8, node.y - 8);
+      });
+
+      ctx.restore();
+    }
+
+    function renderKnowledgeGraph() {
+      const runtime = ensureGraphRuntime();
+      const filteredNodes = runtime.nodes.length;
+      const filteredLinks = runtime.links.length;
+      graphEmptyState.classList.toggle("show", !filteredNodes);
+      graphCountsLine.textContent = `Nodes ${filteredNodes} | Links ${filteredLinks}`;
+      drawKnowledgeGraph();
+      if (runtime.raf) return;
+      const tick = () => {
+        runtime.raf = 0;
+        if (state.activeTab !== "graph") return;
+        stepKnowledgeGraphSimulation();
+        drawKnowledgeGraph();
+        if (runtime.simulationAlpha > 0.001 || runtime.draggingNodeId || runtime.hoveredNodeId || runtime.hoveredLinkId) {
+          runtime.raf = window.requestAnimationFrame(tick);
+        }
+      };
+      runtime.raf = window.requestAnimationFrame(tick);
+    }
+
+    function resetKnowledgeGraphView() {
+      const runtime = ensureGraphRuntime();
+      runtime.view.scale = 1;
+      runtime.view.x = Math.max(160, (graphCanvasWrap.clientWidth || 800) / 2);
+      runtime.view.y = Math.max(120, (graphCanvasWrap.clientHeight || 560) / 2);
+      renderKnowledgeGraph();
+    }
+
+    function relayoutKnowledgeGraph() {
+      initializeKnowledgeGraphLayout(false);
+      resetKnowledgeGraphView();
+      renderKnowledgeGraph();
+    }
+
+    async function refreshKnowledgeGraph() {
+      setGraphStatus("Loading knowledge graph...");
+      try {
+        const params = new URLSearchParams();
+        params.set("limitMeetings", String(parseLimit(graphMeetingLimit.value) || 40));
+        params.set("maxActionsPerMeeting", String(parseLimit(graphActionsLimit.value) || 5));
+        params.set("maxTopicsPerMeeting", String(parseLimit(graphTopicsLimit.value) || 4));
+        params.set("maxMeetingLinks", "360");
+        const result = await fetchJson(`/api/rag/knowledge-graph?${params.toString()}`);
+        state.graphData = {
+          nodes: Array.isArray(result?.nodes) ? result.nodes : [],
+          links: Array.isArray(result?.links) ? result.links : [],
+          stats: result?.stats || {}
+        };
+        state.graphLoaded = true;
+        ensureKnowledgeGraphCanvasSize();
+        initializeKnowledgeGraphLayout(true);
+        renderKnowledgeGraph();
+        setGraphStatus(
+          `Graph loaded: ${state.graphData.nodes.length} nodes, ${state.graphData.links.length} links from ${state.graphData.stats?.meetings || 0} meetings.`
+        );
+      } catch (err) {
+        state.graphLoaded = true;
+        state.graphData = { nodes: [], links: [], stats: {} };
+        initializeKnowledgeGraphLayout(false);
+        renderKnowledgeGraph();
+        setGraphStatus(`Knowledge graph load failed: ${err.message || err}`, true);
+      }
+    }
+
+    async function refreshTodoLists() {
+      const result = await fetchJson("/api/todos/lists");
+      state.todoLists = (Array.isArray(result.lists) ? result.lists : [])
+        .sort((a, b) => normalizeListSortOrder(a?.sortOrder) - normalizeListSortOrder(b?.sortOrder));
+
+      upsertSelectOptions(taskCategoryFilter, state.todoLists, { includeAll: true, allLabel: "All columns" });
+      upsertSelectOptions(taskFormCategory, state.todoLists, { includeAll: false });
+      upsertSelectOptions(document.getElementById("manageCategorySelect"), state.todoLists, { includeAll: false });
+      updateTaskFilterClearButtons();
+    }
+
+    async function refreshTodos() {
+      const params = new URLSearchParams();
+      params.set("status", "all");
+      params.set("limit", "5000");
+      const result = await fetchJson(`/api/todos/items?${params.toString()}`);
+      state.todos = Array.isArray(result.todos) ? result.todos : [];
+      renderTaskBoard();
+    }
+
+    async function refreshTaskWorkspace() {
+      try {
+        await refreshTodoLists();
+        await refreshTodos();
+      } catch (err) {
+        setTodoStatus(`Task refresh failed: ${err.message || err}`, true);
+      }
+    }
+
+    async function quickAddColumn() {
+      const rawName = window.prompt("New column name:");
+      const name = safeText(rawName);
+      if (!name) return;
+      const defaultColor = String(document.getElementById("newCategoryColor").value || "#22c55e").trim();
+      try {
+        await fetchJson("/api/todos/lists", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name, color: defaultColor, sortOrder: getNextListSortOrder() })
+        });
+        setTodoStatus(`Column created: ${name}`);
+        await refreshTaskWorkspace();
+      } catch (err) {
+        setTodoStatus(`Column create failed: ${err.message || err}`, true);
+      }
+    }
+
+    async function moveColumn(columnId, beforeColumnId = "") {
+      const movingId = String(columnId || "").trim();
+      if (!movingId) return;
+      const targetBeforeId = String(beforeColumnId || "").trim();
+      if (movingId === targetBeforeId) return;
+
+      const ordered = [...state.todoLists]
+        .sort((a, b) => normalizeListSortOrder(a?.sortOrder) - normalizeListSortOrder(b?.sortOrder));
+      const currentIndex = ordered.findIndex(item => item.id === movingId);
+      if (currentIndex < 0) return;
+
+      const [moving] = ordered.splice(currentIndex, 1);
+      let insertIndex = ordered.length;
+      if (targetBeforeId) {
+        const idx = ordered.findIndex(item => item.id === targetBeforeId);
+        if (idx >= 0) insertIndex = idx;
+      }
+      ordered.splice(insertIndex, 0, moving);
+
+      const updates = [];
+      ordered.forEach((item, idx) => {
+        const sortOrder = (idx + 1) * 10;
+        if (normalizeListSortOrder(item?.sortOrder) !== sortOrder) {
+          updates.push({ id: item.id, sortOrder });
+        }
+      });
+
+      if (!updates.length) return;
+
+      try {
+        for (const update of updates) {
+          await fetchJson(`/api/todos/lists/${encodeURIComponent(update.id)}`, {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ sortOrder: update.sortOrder })
+          });
+        }
+        setTodoStatus("Column order saved.");
+        await refreshTodoLists();
+        renderTaskBoard();
+      } catch (err) {
+        setTodoStatus(`Column reorder failed: ${err.message || err}`, true);
+      }
+    }
+
+    async function createCategory() {
+      const name = safeText(document.getElementById("newCategoryName").value);
+      const color = String(document.getElementById("newCategoryColor").value || "").trim();
+      if (!name) {
+        setTodoStatus("Column name is required.", true);
+        return;
+      }
+      try {
+        await fetchJson("/api/todos/lists", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name, color, sortOrder: getNextListSortOrder() })
+        });
+        document.getElementById("newCategoryName").value = "";
+        setTodoStatus(`Column created: ${name}`);
+        await refreshTodoLists();
+        await refreshTodos();
+      } catch (err) {
+        setTodoStatus(`Column create failed: ${err.message || err}`, true);
+      }
+    }
+
+    async function updateCategoryColor() {
+      const categoryId = document.getElementById("manageCategorySelect").value;
+      const color = String(document.getElementById("manageCategoryColor").value || "").trim();
+      if (!categoryId) {
+        setTodoStatus("Select a column first.", true);
+        return;
+      }
+      try {
+        await fetchJson(`/api/todos/lists/${encodeURIComponent(categoryId)}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ color })
+        });
+        setTodoStatus("Column color updated.");
+        await refreshTodoLists();
+        renderTaskBoard();
+      } catch (err) {
+        setTodoStatus(`Column update failed: ${err.message || err}`, true);
+      }
+    }
+
+    function addTagColor() {
+      const tag = safeText(document.getElementById("tagNameInput").value).toLowerCase();
+      const color = String(document.getElementById("tagColorInput").value || "").trim();
+      if (!tag) {
+        setTodoStatus("Category name is required.", true);
+        return;
+      }
+      state.tagPalette[tag] = color || "#3b82f6";
+      saveTagPalette();
+      renderTagPalette();
+      renderTaskBoard();
+      document.getElementById("tagNameInput").value = "";
+      setTodoStatus(`Saved color for category: ${tag}`);
+    }
+
+    async function importTodosFromMeetings() {
+      setTodoStatus("Importing tasks from Fireflies meetings...");
+      try {
+        const result = await fetchJson("/api/todos/import/fireflies", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            listId: taskCategoryFilter.value === "all" ? null : taskCategoryFilter.value,
+            limitMeetings: 400
+          })
+        });
+        if (result.noNewTasks) {
+          setTodoStatus(
+            `No new tasks imported. Skipped ${result.skippedCount || 0} existing open tasks from ${result.scannedMeetings || 0} meetings.`
+          );
+        } else {
+          setTodoStatus(
+            `Imported ${result.createdCount || 0} tasks, skipped ${result.skippedCount || 0} duplicates from ${result.scannedMeetings || 0} meetings.`
+          );
+        }
+        await refreshTaskWorkspace();
+      } catch (err) {
+        setTodoStatus(`Import failed: ${err.message || err}`, true);
+      }
+    }
+
+    function inferNotionImportFormatFromFilename(filename) {
+      const lower = String(filename || "").trim().toLowerCase();
+      if (lower.endsWith(".csv")) return "csv";
+      if (lower.endsWith(".json")) return "json";
+      return "";
+    }
+
+    async function importTodosFromNotionLocal(rawText, sourceName = "", formatHint = "") {
+      const payloadText = String(rawText || "");
+      if (!payloadText.trim()) {
+        setTodoStatus("Selected Notion file is empty.", true);
+        return;
+      }
+
+      setTodoStatus(`Importing Notion data from ${sourceName || "file"}...`);
+      try {
+        const result = await fetchJson("/api/todos/import/notion-local", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            rawText: payloadText,
+            formatHint,
+            includeCompleted: true
+          })
+        });
+
+        const touched = Array.isArray(result.columnsTouched) ? result.columnsTouched : [];
+        const touchedLabel = touched.length ? ` Columns: ${touched.slice(0, 6).join(", ")}${touched.length > 6 ? "..." : ""}.` : "";
+        setTodoStatus(
+          `Notion import complete: created ${result.createdCount || 0}, updated ${result.updatedCount || 0}, ` +
+          `done ${result.doneCount || 0}, open ${result.openCount || 0}, skipped ${result.skippedCount || 0}.${touchedLabel}`
+        );
+
+        await refreshTaskWorkspace();
+      } catch (err) {
+        setTodoStatus(`Notion import failed: ${err.message || err}`, true);
+      }
+    }
+
+    function openNotionLocalImportPicker() {
+      if (!todoImportNotionLocalFile) {
+        setTodoStatus("Notion import control not available.", true);
+        return;
+      }
+      todoImportNotionLocalFile.value = "";
+      todoImportNotionLocalFile.click();
+    }
+
+    async function onNotionLocalImportFileChange(evt) {
+      const file = evt?.target?.files?.[0];
+      if (!file) return;
+      try {
+        const rawText = await file.text();
+        const formatHint = inferNotionImportFormatFromFilename(file.name);
+        await importTodosFromNotionLocal(rawText, file.name || "file", formatHint);
+      } catch (err) {
+        setTodoStatus(`Unable to read Notion file: ${err.message || err}`, true);
+      } finally {
+        if (evt?.target) evt.target.value = "";
+      }
+    }
+
+    async function autoOrganizeKanban() {
+      setTodoStatus("Auto-organizing tasks, recalculating priority, and refreshing context notes...");
+      try {
+        const result = await fetchJson("/api/todos/kanban/organize", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ enrichContext: true })
+        });
+        const counts = result.countsByColumn || {};
+        setTodoStatus(
+          `Kanban organized: moved ${result.movedCount || 0}, unchanged ${result.unchangedCount || 0}, ` +
+          `reprioritized ${result.reprioritizedCount || 0}, context refreshed ${result.contextUpdatedCount || 0}, ` +
+          `manual-skip ${result.skippedManualCount || 0}. ` +
+          `Backlog ${counts["Backlog / To Be Processed"] || 0}, ` +
+          `High ${counts["Priority - High"] || 0}, ` +
+          `Medium ${counts["Priority - Medium"] || 0}, ` +
+          `Low ${counts["Priority - Low"] || 0}.`
+        );
+        await refreshTaskWorkspace();
+      } catch (err) {
+        setTodoStatus(`Kanban auto-organize failed: ${err.message || err}`, true);
+      }
+    }
+
+    document.getElementById("tabBtnFireflies").addEventListener("click", () => activateTab("fireflies"));
+    document.getElementById("tabBtnMeetings").addEventListener("click", () => activateTab("meetings"));
+    document.getElementById("tabBtnGraph").addEventListener("click", () => activateTab("graph"));
+    document.getElementById("tabBtnTasks").addEventListener("click", () => activateTab("tasks"));
+    document.querySelectorAll(".panel-tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activateTab(String(btn.dataset.tab || "fireflies"));
+      });
+    });
+    document.getElementById("meetingsRefreshBtn").addEventListener("click", refreshMeetingsWorkbench);
+    document.getElementById("meetingsImportBtn").addEventListener("click", importSelectedMeetingActions);
+    meetingMarkReviewedBtn.addEventListener("click", () => setSelectedMeetingReviewed(true));
+    meetingMarkUnreviewedBtn.addEventListener("click", () => setSelectedMeetingReviewed(false));
+    document.getElementById("graphRefreshBtn").addEventListener("click", refreshKnowledgeGraph);
+    document.getElementById("graphRelayoutBtn").addEventListener("click", relayoutKnowledgeGraph);
+    document.getElementById("graphResetViewBtn").addEventListener("click", resetKnowledgeGraphView);
+
+    document.getElementById("refreshStatusBtn").addEventListener("click", refreshStatus);
+    document.getElementById("syncBtn").addEventListener("click", runSync);
+    document.getElementById("catchupBtn").addEventListener("click", runCatchup);
+    document.getElementById("askBtn").addEventListener("click", askQuestion);
+    copyBtn.addEventListener("click", copyForOneNote);
+
+    document.getElementById("todoRefreshBtn").addEventListener("click", refreshTaskWorkspace);
+    document.getElementById("todoImportBtn").addEventListener("click", importTodosFromMeetings);
+    todoImportNotionLocalBtn.addEventListener("click", openNotionLocalImportPicker);
+    document.getElementById("todoAutoKanbanBtn").addEventListener("click", autoOrganizeKanban);
+    document.getElementById("todoQuickAddColumnBtn").addEventListener("click", quickAddColumn);
+    document.getElementById("todoNewTaskBtn").addEventListener("click", () => openTaskModal(""));
+    todoImportNotionLocalFile.addEventListener("change", onNotionLocalImportFileChange);
+
+    document.getElementById("createCategoryBtn").addEventListener("click", createCategory);
+    document.getElementById("updateCategoryColorBtn").addEventListener("click", updateCategoryColor);
+    document.getElementById("addTagColorBtn").addEventListener("click", addTagColor);
+    taskFormTags.addEventListener("input", renderTagPalette);
+    clearTaskFiltersBtn.addEventListener("click", clearAllTaskFilters);
+    clearTaskStatusFilterBtn.addEventListener("click", () => clearTaskFilter("status"));
+    clearTaskCategoryFilterBtn.addEventListener("click", () => clearTaskFilter("category"));
+    clearTaskPriorityFilterBtn.addEventListener("click", () => clearTaskFilter("priority"));
+    clearTaskTagFilterBtn.addEventListener("click", () => clearTaskFilter("tag"));
+    clearTaskSearchFilterBtn.addEventListener("click", () => clearTaskFilter("search"));
+    clearTaskSortByFilterBtn.addEventListener("click", () => clearTaskFilter("sortBy"));
+
+    [taskStatusFilter, taskCategoryFilter, taskPriorityFilter, taskSortBy].forEach(el => {
+      el.addEventListener("change", () => {
+        renderTaskBoard();
+      });
+    });
+
+    [taskTagFilter, taskSearch].forEach(el => {
+      el.addEventListener("input", () => renderTaskBoard());
+    });
+
+    [graphNodeTypeFilter].forEach(el => {
+      el.addEventListener("change", () => {
+        initializeKnowledgeGraphLayout(true);
+        renderKnowledgeGraph();
+      });
+    });
+
+    [graphSearch].forEach(el => {
+      el.addEventListener("input", () => {
+        initializeKnowledgeGraphLayout(true);
+        renderKnowledgeGraph();
+      });
+    });
+
+    [graphMeetingLimit, graphActionsLimit, graphTopicsLimit].forEach(el => {
+      el.addEventListener("change", () => {
+        if (state.activeTab === "graph") refreshKnowledgeGraph();
+      });
+    });
+
+    taskShowHiddenOlderToggle.addEventListener("change", () => {
+      state.showHiddenOlder = Boolean(taskShowHiddenOlderToggle.checked);
+      saveShowHiddenOlderSetting(state.showHiddenOlder);
+      renderTaskBoard();
+    });
+
+    taskBoard.addEventListener("dragover", (evt) => {
+      if (!state.dragLaneId || state.dragTaskId) return;
+      evt.preventDefault();
+    });
+
+    taskBoard.addEventListener("drop", async (evt) => {
+      if (!state.dragLaneId || state.dragTaskId) return;
+      if (evt.target?.closest(".task-lane")) return;
+      evt.preventDefault();
+      const movingLaneId = state.dragLaneId;
+      state.dragLaneId = "";
+      await moveColumn(movingLaneId, "");
+    });
+
+    document.getElementById("saveTaskBtn").addEventListener("click", saveTaskFromModal);
+    document.getElementById("toggleTaskStatusBtn").addEventListener("click", toggleTaskStatusFromModal);
+    taskPrevBtn.addEventListener("click", () => openAdjacentTask(-1));
+    taskNextBtn.addEventListener("click", () => openAdjacentTask(1));
+    document.getElementById("openTaskContextBtn").addEventListener("click", () => {
+      if (!state.currentTaskId) {
+        setTodoStatus("Save the task first to load context.", true);
+        return;
+      }
+      openTaskContext(state.currentTaskId);
+    });
+
+    document.getElementById("closeTaskModalBtn").addEventListener("click", closeTaskModal);
+    document.getElementById("closeContextModalBtn").addEventListener("click", closeContextModal);
+    document.getElementById("closeGraphDetailModalBtn").addEventListener("click", closeGraphDetailModal);
+
+    taskModalBackdrop.addEventListener("click", (evt) => {
+      if (evt.target === taskModalBackdrop) closeTaskModal();
+    });
+
+    contextModalBackdrop.addEventListener("click", (evt) => {
+      if (evt.target === contextModalBackdrop) closeContextModal();
+    });
+
+    graphDetailModalBackdrop.addEventListener("click", (evt) => {
+      if (evt.target === graphDetailModalBackdrop) closeGraphDetailModal();
+    });
+
+    window.addEventListener("resize", () => {
+      if (state.activeTab !== "graph") return;
+      ensureKnowledgeGraphCanvasSize();
+      renderKnowledgeGraph();
+    });
+
+    activateTab(state.activeTab);
+    taskShowHiddenOlderToggle.checked = state.showHiddenOlder;
+    renderTagPalette();
+    updateTaskFilterClearButtons();
+    updateTaskNavControls();
+    updateTaskWindowHint(0);
+    refreshStatus();
+    refreshTaskWorkspace();
+    setInterval(refreshStatus, 12000);
+  </script>
+</body>
+</html>
