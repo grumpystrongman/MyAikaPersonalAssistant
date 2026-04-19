@@ -262,6 +262,7 @@ function applyEmotionTuning(settings, behavior) {
   let pitch = settings.pitch ?? 0;
   let energy = settings.energy ?? 1.0;
   let pause = settings.pause ?? 1.1;
+  let style = settings.style || "nocturne_hostess";
 
   const scale = 0.6 + intensity * 0.8;
 
@@ -302,12 +303,56 @@ function applyEmotionTuning(settings, behavior) {
       energy -= 0.3 * scale;
       pause += 0.25 * scale;
       break;
+    case "warm_supportive":
+      style = "nocturne_velvet";
+      rate -= 0.06 * scale;
+      pitch += 0.12 * scale;
+      energy -= 0.06 * scale;
+      pause += 0.1 * scale;
+      break;
+    case "witty_playful":
+      style = "nocturne_hostess";
+      rate += 0.08 * scale;
+      pitch += 0.16 * scale;
+      energy += 0.08 * scale;
+      pause -= 0.05 * scale;
+      break;
+    case "analytical":
+    case "focused_executive":
+      style = "nocturne_command";
+      rate += 0.03 * scale;
+      pitch -= 0.05 * scale;
+      energy += 0.03 * scale;
+      pause -= 0.08 * scale;
+      break;
+    case "serious":
+      style = "nocturne_command";
+      rate -= 0.04 * scale;
+      pitch -= 0.12 * scale;
+      energy -= 0.04 * scale;
+      pause += 0.08 * scale;
+      break;
+    case "reflective":
+      style = "nocturne_velvet";
+      rate -= 0.08 * scale;
+      pitch -= 0.08 * scale;
+      energy -= 0.08 * scale;
+      pause += 0.14 * scale;
+      break;
+    case "teasing":
+      style = "nocturne_hostess";
+      rate += 0.06 * scale;
+      pitch += 0.08 * scale;
+      energy += 0.05 * scale;
+      pause -= 0.02 * scale;
+      break;
     default:
       break;
   }
 
   return {
     ...settings,
+    style,
     rate: Number(rate.toFixed(2)),
     pitch: Number(pitch.toFixed(2)),
     energy: Number(energy.toFixed(2)),
@@ -690,7 +735,7 @@ export default function Home() {
   const [featuresView, setFeaturesView] = useState("mcp");
   const [connectModal, setConnectModal] = useState(null);
   const [avatarModels, setAvatarModels] = useState([]);
-  const [avatarModelId, setAvatarModelId] = useState("miku");
+  const [avatarModelId, setAvatarModelId] = useState("aika_nocturne_portrait");
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [avatarHidden, setAvatarHidden] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -835,18 +880,19 @@ export default function Home() {
   const [ttsError, setTtsError] = useState("");
   const [ttsWarnings, setTtsWarnings] = useState([]);
   const [ttsLevel, setTtsLevel] = useState(0);
+  const [avatarLipsync, setAvatarLipsync] = useState(null);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [pendingSpeak, setPendingSpeak] = useState(null);
   const [lastAssistantText, setLastAssistantText] = useState("");
   const [ttsSettings, setTtsSettings] = useState({
-    style: "brat_baddy",
+    style: "nocturne_hostess",
     format: "wav",
     rate: 1.05,
     pitch: 0,
     energy: 1.0,
     pause: 1.1,
-    engine: "piper",
-    voice: { reference_wav_path: "riko_sample.wav", name: "en_GB-semaine-medium", prompt_text: "" }
+    engine: "",
+    voice: { reference_wav_path: "", name: "", prompt_text: "" }
   });
   const [meetingLock, setMeetingLock] = useState(false);
   const previousChatState = useRef(null);
@@ -1162,6 +1208,7 @@ export default function Home() {
   const forceServerSttRef = useRef(false);
   const ttsSourceRef = useRef(null);
   const ttsRafRef = useRef(null);
+  const ttsPlaybackTokenRef = useRef(0);
   const prefTimerRef = useRef(null);
   const lastPrefRef = useRef("");
   const promptTimerRef = useRef(null);
@@ -1320,6 +1367,7 @@ export default function Home() {
   }
 
   async function stopAudio(fadeMs = 160) {
+    ttsPlaybackTokenRef.current += 1;
     const audio = audioRef.current;
     if (audio) {
       const start = Number.isFinite(audio.volume) ? audio.volume : 1;
@@ -1346,6 +1394,50 @@ export default function Home() {
     if (ttsRafRef.current) cancelAnimationFrame(ttsRafRef.current);
     ttsRafRef.current = null;
     setTtsLevel(0);
+    setAvatarLipsync(null);
+  }
+
+  async function ensureAudioDurationMs(audio) {
+    if (audio && Number.isFinite(audio.duration) && audio.duration > 0) {
+      return Math.max(320, Math.round(audio.duration * 1000));
+    }
+    if (!audio) return 1800;
+    return await new Promise(resolve => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        audio.removeEventListener("loadedmetadata", finish);
+        audio.removeEventListener("canplay", finish);
+        const durationMs = Number.isFinite(audio.duration) && audio.duration > 0
+          ? Math.max(320, Math.round(audio.duration * 1000))
+          : 1800;
+        resolve(durationMs);
+      };
+      audio.addEventListener("loadedmetadata", finish, { once: true });
+      audio.addEventListener("canplay", finish, { once: true });
+      setTimeout(finish, 900);
+    });
+  }
+
+  async function fetchAvatarLipsyncPreview(text, durationMs) {
+    const cleanText = String(text || "").trim();
+    if (!cleanText) return null;
+    try {
+      const r = await fetch(`${SERVER_URL}/api/aika/avatar/runtime/lipsync/preview`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: cleanText,
+          durationMs: Math.max(320, Math.round(Number(durationMs) || 1800))
+        })
+      });
+      if (!r.ok) return null;
+      const data = await r.json().catch(() => ({}));
+      return data?.lipsync || null;
+    } catch {
+      return null;
+    }
   }
 
   async function startLipSync(audio) {
@@ -1389,6 +1481,7 @@ export default function Home() {
 
   async function testVoice() {
     try {
+      const sampleText = "Testing Aika Voice. If you hear this, audio output is working.";
       if (!audioUnlocked) {
         setTtsError("audio_locked_click_enable");
         return;
@@ -1400,7 +1493,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: "Testing Aika Voice. If you hear this, audio output is working.",
+          text: sampleText,
           settings: applyEmotionTuning(ttsSettings, behavior)
         })
       });
@@ -1424,11 +1517,18 @@ export default function Home() {
 
       const objectUrl = URL.createObjectURL(blob);
       const audio = audioRef.current || new Audio();
+      const playbackToken = ++ttsPlaybackTokenRef.current;
       audioRef.current = audio;
       audio.src = objectUrl;
       audio.preload = "auto";
       audio.volume = 1;
+      const durationMs = await ensureAudioDurationMs(audio);
+      const lipsync = await fetchAvatarLipsyncPreview(sampleText, durationMs);
       startLipSync(audio);
+      audio.onplaying = () => {
+        if (playbackToken !== ttsPlaybackTokenRef.current) return;
+        setAvatarLipsync(lipsync ? { sequence: lipsync, startedAtMs: performance.now() } : null);
+      };
       audio.onended = () => {
         URL.revokeObjectURL(objectUrl);
         setTtsStatus("idle");
@@ -1441,6 +1541,9 @@ export default function Home() {
       audio.onerror = async () => {
         URL.revokeObjectURL(objectUrl);
         try {
+          if (playbackToken === ttsPlaybackTokenRef.current) {
+            setAvatarLipsync(lipsync ? { sequence: lipsync, startedAtMs: performance.now() } : null);
+          }
           setTtsStatus("playing");
           await playBlobWithAudioContext(blob);
           setTtsStatus("idle");
@@ -1491,6 +1594,7 @@ export default function Home() {
         stopMic();
         await stopAudio();
       }
+      const playbackToken = ++ttsPlaybackTokenRef.current;
       ttsActiveRef.current = true;
       setTtsError("");
       setTtsStatus("loading");
@@ -1534,7 +1638,30 @@ export default function Home() {
         audio.src = objectUrl;
         audio.preload = "auto";
         audio.volume = 1;
+        ensureAudioDurationMs(audio)
+          .then(durationMs => fetchAvatarLipsyncPreview(text, durationMs))
+          .then(lipsync => {
+            audio.__aikaLipsync = playbackToken === ttsPlaybackTokenRef.current ? lipsync : null;
+            if (
+              playbackToken === ttsPlaybackTokenRef.current &&
+              lipsync &&
+              !audio.paused &&
+              Number.isFinite(audio.currentTime)
+            ) {
+              setAvatarLipsync({
+                sequence: lipsync,
+                startedAtMs: performance.now() - audio.currentTime * 1000
+              });
+            }
+          })
+          .catch(() => {
+            audio.__aikaLipsync = null;
+          });
         startLipSync(audio);
+        audio.onplaying = () => {
+          if (playbackToken !== ttsPlaybackTokenRef.current) return;
+          setAvatarLipsync(audio.__aikaLipsync ? { sequence: audio.__aikaLipsync, startedAtMs: performance.now() } : null);
+        };
         audio.onended = () => {
           URL.revokeObjectURL(objectUrl);
           setTtsStatus("idle");
@@ -1549,6 +1676,9 @@ export default function Home() {
         audio.onerror = async () => {
           URL.revokeObjectURL(objectUrl);
           try {
+            if (playbackToken === ttsPlaybackTokenRef.current) {
+              setAvatarLipsync(audio.__aikaLipsync ? { sequence: audio.__aikaLipsync, startedAtMs: performance.now() } : null);
+            }
             setTtsStatus("playing");
             await playBlobWithAudioContext(blob);
             setTtsStatus("idle");
@@ -2075,10 +2205,8 @@ export default function Home() {
       try {
         const r = await fetch(`${SERVER_URL}/api/aika/tts/health`);
         const data = await r.json();
-        if (data?.engine === "gptsovits") {
-          setTtsEngineOnline(Boolean(data.online));
-        } else if (data?.engine) {
-          setTtsEngineOnline(false);
+        if (data?.engine) {
+          setTtsEngineOnline(typeof data.online === "boolean" ? data.online : null);
         } else {
           setTtsEngineOnline(null);
         }
@@ -2440,7 +2568,7 @@ export default function Home() {
               ? data.voices
               : [];
           setAvailableVoices(list);
-          if (list.length && !ttsSettings.voice?.name) {
+          if (data.engine === "piper" && list.length && !ttsSettings.voice?.name) {
             setTtsSettings(s => ({ ...s, voice: { ...s.voice, name: list[0].id } }));
           }
           if (!ttsSettings.engine && data.engine) {
@@ -2464,7 +2592,9 @@ export default function Home() {
           const storedOk = stored && list.some(m => m.id === stored && m.available);
           const preferred =
             (storedOk && stored) ||
-            (list.find(m => m.id.toLowerCase() === "miku" && m.available)?.id ||
+            (list.find(m => m.id.toLowerCase() === "aika_nocturne_portrait" && m.available)?.id ||
+              list.find(m => m.id.toLowerCase() === "aika_nocturne_cinematic" && m.available)?.id ||
+              list.find(m => m.id.toLowerCase() === "miku" && m.available)?.id ||
               list.find(m => m.available)?.id ||
               list[0]?.id ||
               "");
@@ -2523,6 +2653,8 @@ export default function Home() {
         const list = Array.isArray(data.models) ? data.models : [];
         setAvatarModels(list);
         const preferred =
+          list.find(m => m.id.toLowerCase() === "aika_nocturne_portrait" && m.available)?.id ||
+          list.find(m => m.id.toLowerCase() === "aika_nocturne_cinematic" && m.available)?.id ||
           list.find(m => m.id.toLowerCase() === "miku" && m.available)?.id ||
           list.find(m => m.available)?.id ||
           list[0]?.id ||
@@ -3742,7 +3874,11 @@ export default function Home() {
                 isTalking={ttsStatus === "playing" || behavior?.speaking}
                 talkIntensity={ttsStatus === "playing" ? Math.max(0.12, ttsLevel) : (behavior?.intensity ?? 0.35)}
                 isListening={micState === "listening"}
+                lipsyncSequence={avatarLipsync?.sequence || null}
+                lipsyncStartTimeMs={avatarLipsync?.startedAtMs || 0}
+                engineHint={avatarModels.find(m => m.id === avatarModelId)?.engine}
                 modelUrl={avatarModels.find(m => m.id === avatarModelId)?.modelUrl}
+                portraitConfig={avatarModels.find(m => m.id === avatarModelId)?.portraitConfig}
                 fallbackPng={avatarModels.find(m => m.id === avatarModelId)?.fallbackPng}
                 pngSet={avatarModels.find(m => m.id === avatarModelId)?.pngSet}
                 backgroundSrc={AVATAR_BACKGROUNDS.find(bg => bg.id === avatarBackground)?.src}
@@ -4939,6 +5075,9 @@ export default function Home() {
                       onChange={(e) => setTtsSettings(s => ({ ...s, style: e.target.value }))}
                       style={{ padding: 6, borderRadius: 6, border: "1px solid var(--panel-border-strong)" }}
                     >
+                      <option value="nocturne_hostess">nocturne_hostess</option>
+                      <option value="nocturne_velvet">nocturne_velvet</option>
+                      <option value="nocturne_command">nocturne_command</option>
                       <option value="brat_baddy">brat_baddy</option>
                       <option value="brat_soft">brat_soft</option>
                       <option value="brat_firm">brat_firm</option>
@@ -4952,6 +5091,7 @@ export default function Home() {
                       style={{ padding: 6, borderRadius: 6, border: "1px solid var(--panel-border-strong)" }}
                     >
                       <option value="">default</option>
+                      <option value="openai">openai</option>
                       <option value="gptsovits">gptsovits</option>
                       <option value="piper">piper</option>
                     </select>
@@ -5038,6 +5178,25 @@ export default function Home() {
                       </label>
                       <div style={{ fontSize: 11, color: "#6b7280" }}>
                         Place Piper .onnx + .onnx.json files in `apps/server/piper_voices`.
+                      </div>
+                    </>
+                  ) : (ttsSettings.engine || statusInfo?.tts?.engine) === "openai" ? (
+                    <>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "var(--text-muted)" }}>
+                        OpenAI Voice
+                        <select
+                          value={ttsSettings.voice.name || ""}
+                          onChange={(e) => setTtsSettings(s => ({ ...s, voice: { ...s.voice, name: e.target.value } }))}
+                          style={{ padding: 6, borderRadius: 6, border: "1px solid var(--panel-border-strong)" }}
+                        >
+                          <option value="">style default</option>
+                          {availableVoices.map(v => (
+                            <option key={v.id} value={v.id}>{v.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <div style={{ fontSize: 11, color: "#6b7280" }}>
+                        OpenAI TTS uses the style preset plus prompt text to shape delivery.
                       </div>
                     </>
                   ) : (
@@ -5329,6 +5488,9 @@ export default function Home() {
                   </div>
                   <div style={{ fontSize: 12, color: "#6b7280" }}>
                     Piper: {statusInfo?.tts?.engines?.piper?.enabled ? (statusInfo?.tts?.engines?.piper?.ready ? "Ready" : "Missing voices") : "Inactive"}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    OpenAI TTS: {statusInfo?.tts?.engines?.openai?.enabled ? (statusInfo?.tts?.engines?.openai?.configured ? "Ready" : "Missing key") : "Inactive"}
                   </div>
                   <div style={{ fontSize: 12, color: "#6b7280" }}>Model: {statusInfo?.openai?.model || "-"}</div>
                 </div>
@@ -6233,7 +6395,9 @@ export default function Home() {
           <div style={{ color: "#6b7280", fontSize: 12 }}>
             Voice: {ttsStatus}
           </div>
-          <div style={{ color: "#6b7280", fontSize: 12 }}>{ttsEngineOnline === true ? "GPT-SoVITS: online" : ttsEngineOnline === false ? "GPT-SoVITS: offline" : "GPT-SoVITS: unknown"}</div>
+          <div style={{ color: "#6b7280", fontSize: 12 }}>
+            Engine: {ttsSettings.engine || statusInfo?.tts?.engine || "default"} {ttsEngineOnline === true ? "(online)" : ttsEngineOnline === false ? "(offline)" : ""}
+          </div>
           <div style={{ color: "#6b7280", fontSize: 12 }}>
             {audioUnlocked ? "Audio Enabled" : "Audio Locked (click once to enable)"} 
           </div>

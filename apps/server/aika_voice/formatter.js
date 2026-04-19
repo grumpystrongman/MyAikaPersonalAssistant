@@ -13,6 +13,21 @@ const STYLE_PRESETS = {
     prefix: "Listen, ",
     taglines: ["Focus.", "Nope.", "Not quite."],
     closers: ["Do it right.", "Try again.", "Better."]
+  },
+  nocturne_hostess: {
+    prefix: "",
+    taglines: ["All right.", "Stay with me.", "Let's have a look."],
+    closers: ["Let's continue.", "Go on.", "Keep moving."]
+  },
+  nocturne_velvet: {
+    prefix: "",
+    taglines: ["I hear you.", "Take your time.", "Go on."],
+    closers: ["I'm right here.", "We can do this quietly.", "Slow and steady."]
+  },
+  nocturne_command: {
+    prefix: "",
+    taglines: ["Focus.", "Here is the move.", "Listen closely."],
+    closers: ["Proceed.", "Next step.", "Stay on it."]
   }
 };
 

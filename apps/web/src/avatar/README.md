@@ -1,8 +1,7 @@
-# Aika Avatar Engine (Live2D + PNG fallback)
+# Aika Avatar Engine (Live2D + Cinematic fallback)
 
 ## Assets
-- PNG fallback (only used if WebGL is unavailable):
-  - `/public/assets/aika/live2d/placeholder.svg`
+- Cinematic canvas fallback (default for no model or Live2D unavailable)
 - Live2D models (Cubism 4):
   - `/public/assets/aika/live2d/models.json` (generated via Refresh or Import)
   - Model files live under `/public/assets/aika/live2d/<model-id>/`

@@ -7,6 +7,23 @@ const DEFAULT_MEMORY_MODE = "opt_in";
 const DEFAULT_RAG_MODEL = process.env.DEFAULT_RAG_MODEL || "all";
 const MAX_SUMMARY_CHARS = 2000;
 
+function defaultVoiceSettings(promptText = "") {
+  return {
+    style: "nocturne_hostess",
+    format: "wav",
+    rate: 1.05,
+    pitch: 0,
+    energy: 1.0,
+    pause: 1.1,
+    engine: process.env.OPENAI_API_KEY ? "openai" : "piper",
+    voice: {
+      reference_wav_path: "",
+      name: "",
+      prompt_text: promptText
+    }
+  };
+}
+
 function limitText(value, max) {
   const text = String(value || "").trim();
   if (!max || text.length <= max) return text;
@@ -26,7 +43,7 @@ function defaultPreferences() {
       theme: "aurora",
       appBackground: "",
       avatarBackground: "none",
-      avatarModelId: "miku"
+      avatarModelId: "aika_nocturne_portrait"
     },
     audio: {
       sttSilenceMs: 1400,
@@ -34,20 +51,7 @@ function defaultPreferences() {
     },
     voice: {
       promptText: "",
-      settings: {
-        style: "brat_baddy",
-        format: "wav",
-        rate: 1.05,
-        pitch: 0,
-        energy: 1.0,
-        pause: 1.1,
-        engine: "piper",
-        voice: {
-          reference_wav_path: "riko_sample.wav",
-          name: "en_GB-semaine-medium",
-          prompt_text: ""
-        }
-      }
+      settings: defaultVoiceSettings("")
     },
     rag: {
       defaultModel: DEFAULT_RAG_MODEL,
@@ -129,6 +133,40 @@ function mapRow(row, userId) {
   const desiredDefault = String(DEFAULT_RAG_MODEL || "").trim().toLowerCase();
   if ((!currentDefault || currentDefault === "auto") && desiredDefault && desiredDefault !== currentDefault) {
     preferences = mergePreferences(preferences, { rag: { defaultModel: DEFAULT_RAG_MODEL } });
+  }
+  const storedVoiceSettings = preferences?.voice?.settings || {};
+  const storedVoice = storedVoiceSettings?.voice || {};
+  const shouldMigrateLegacyVoice =
+    process.env.OPENAI_API_KEY &&
+    storedVoiceSettings.engine === "piper" &&
+    String(storedVoice.reference_wav_path || "").trim() === "riko_sample.wav" &&
+    String(storedVoice.name || "").trim() === "en_GB-semaine-medium";
+  if (shouldMigrateLegacyVoice) {
+    preferences = mergePreferences(preferences, {
+      voice: {
+        settings: defaultVoiceSettings(preferences?.voice?.promptText || storedVoice.prompt_text || "")
+      }
+    });
+  }
+  const storedAvatarModelId = String(preferences?.appearance?.avatarModelId || "").trim().toLowerCase();
+  if (!storedAvatarModelId || storedAvatarModelId === "miku") {
+    preferences = mergePreferences(preferences, {
+      appearance: {
+        avatarModelId: "aika_nocturne_portrait"
+      }
+    });
+  }
+  const storedVoiceName = String(preferences?.voice?.settings?.voice?.name || "").trim().toLowerCase();
+  if (!storedVoiceName || storedVoiceName === "ballad") {
+    preferences = mergePreferences(preferences, {
+      voice: {
+        settings: {
+          voice: {
+            name: "shimmer"
+          }
+        }
+      }
+    });
   }
   const summary = safeJsonParse(row.summary_json, null) || {};
   return {

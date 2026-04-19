@@ -16,6 +16,7 @@ import { listPiperVoices } from "./aika_voice/engine_piper.js";
 import { fileURLToPath } from "node:url";
 import multer from "multer";
 import { importLive2DZip } from "./avatar_import.js";
+import { lipsyncEngine } from "./src/avatar/index.js";
 import {
   connectGoogle,
   exchangeGoogleCode,
@@ -623,16 +624,55 @@ function withAvatarStatus(models) {
     const fallbackPath = fallbackUrl
       ? path.join(webPublicDir, fallbackUrl.replace(/^\//, ""))
       : "";
-    const hasLive2D = Boolean(modelUrl) && fs.existsSync(localPath);
+    const hasModelFile = Boolean(modelUrl) && fs.existsSync(localPath);
     const hasPng = Boolean(fallbackUrl) && fs.existsSync(fallbackPath);
     const engine = String(model.engine || "").toLowerCase();
-    const isPngModel = engine === "png" || (!modelUrl && Boolean(fallbackUrl));
+    const isPngModel = engine === "png" || engine === "cinematic" || (!modelUrl && Boolean(fallbackUrl));
+    const isPortraitModel = engine === "portrait";
     return {
       ...model,
-      available: isPngModel ? hasPng : hasLive2D,
+      available: isPortraitModel ? (hasModelFile || hasPng) : (isPngModel ? hasPng : hasModelFile),
       thumbnailAvailable: Boolean(thumbUrl) && fs.existsSync(thumbPath)
     };
   });
+}
+
+const BUILT_IN_AVATAR_MODELS = [
+  {
+    id: "aika_nocturne_portrait",
+    label: "AIKA Nocturne (Portrait)",
+    modelUrl: "/assets/aika/portraits/nocturne-human/config.json",
+    fallbackPng: "/assets/aika/portraits/nocturne-human/base.png",
+    thumbnail: "/assets/aika/portraits/nocturne-human/base.png",
+    source: "built_in",
+    engine: "portrait"
+  },
+  {
+    id: "aika_nocturne_cinematic",
+    label: "AIKA Nocturne (Cinematic)",
+    modelUrl: "",
+    fallbackPng: "/assets/aika/live2d/placeholder.svg",
+    thumbnail: "/assets/aika/live2d/placeholder.svg",
+    source: "built_in",
+    engine: "cinematic"
+  }
+];
+
+function withBuiltInAvatarModels(models) {
+  const merged = new Map();
+  for (const model of Array.isArray(models) ? models : []) {
+    if (model?.id) merged.set(model.id, model);
+  }
+  for (const builtIn of BUILT_IN_AVATAR_MODELS.slice().reverse()) {
+    if (!merged.has(builtIn.id)) merged.set(builtIn.id, builtIn);
+  }
+  const ordered = [];
+  for (const builtIn of BUILT_IN_AVATAR_MODELS) {
+    ordered.push(merged.get(builtIn.id) || builtIn);
+    merged.delete(builtIn.id);
+  }
+  for (const model of merged.values()) ordered.push(model);
+  return ordered;
 }
 
 function getDefaultTtsEngine() {
@@ -642,7 +682,53 @@ function getDefaultTtsEngine() {
   const piperBin = process.env.PIPER_BIN || process.env.PIPER_PYTHON_BIN;
   const piperVoices = listPiperVoices();
   if (piperBin && piperVoices.length) return "piper";
+  if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim()) return "openai";
   return "gptsovits";
+}
+
+const OPENAI_TTS_VOICES = new Set([
+  "alloy",
+  "ash",
+  "ballad",
+  "cedar",
+  "coral",
+  "echo",
+  "fable",
+  "marin",
+  "nova",
+  "onyx",
+  "sage",
+  "shimmer",
+  "verse"
+]);
+
+function mergeTtsSettingsWithDefaults(settings, cfg) {
+  const engine = String(settings?.engine || getDefaultTtsEngine()).trim().toLowerCase();
+  const requestedVoice = String(settings?.voice?.name || "").trim();
+  const defaultVoice = String(process.env.TTS_VOICE_NAME || cfg?.voice?.default_name || "").trim();
+  const openaiVoice = OPENAI_TTS_VOICES.has(requestedVoice.toLowerCase())
+    ? requestedVoice
+    : OPENAI_TTS_VOICES.has(defaultVoice.toLowerCase())
+      ? defaultVoice
+      : "";
+
+  const mergedSettings = {
+    ...settings,
+    voice: {
+      ...settings?.voice
+    }
+  };
+
+  if (engine === "openai") {
+    if (openaiVoice) mergedSettings.voice.name = openaiVoice;
+  } else if (!requestedVoice && defaultVoice) {
+    mergedSettings.voice.name = defaultVoice;
+  }
+
+  if (!mergedSettings.voice?.reference_wav_path && cfg?.voice?.default_reference_wav) {
+    mergedSettings.voice.reference_wav_path = defaultRefOverride || cfg.voice.default_reference_wav;
+  }
+  return mergedSettings;
 }
 
 let defaultRefOverride = null;
@@ -3857,22 +3943,7 @@ app.post("/api/aika/voice", async (req, res) => {
   try {
     const { text, settings } = req.body || {};
     const cfg = readAikaConfig();
-    const mergedSettings =
-      settings && settings.voice && settings.voice.name
-        ? settings
-        : {
-            ...settings,
-            voice: {
-              ...settings?.voice,
-              name: process.env.TTS_VOICE_NAME || cfg.voice?.default_name || settings?.voice?.name
-            }
-          };
-    if (!mergedSettings.voice?.reference_wav_path && cfg.voice?.default_reference_wav) {
-      mergedSettings.voice = {
-        ...mergedSettings.voice,
-        reference_wav_path: defaultRefOverride || cfg.voice.default_reference_wav
-      };
-    }
+    const mergedSettings = mergeTtsSettingsWithDefaults(settings, cfg);
     const result = await generateAikaVoice({ text, settings: mergedSettings });
     if (result.warnings && result.warnings.length > 0) {
       res.set("x-tts-warnings", result.warnings.join(","));
@@ -3895,22 +3966,7 @@ app.post("/api/aika/voice/inline", async (req, res) => {
   try {
     const { text, settings } = req.body || {};
     const cfg = readAikaConfig();
-    const mergedSettings =
-      settings && settings.voice && settings.voice.name
-        ? settings
-        : {
-            ...settings,
-            voice: {
-              ...settings?.voice,
-              name: process.env.TTS_VOICE_NAME || cfg.voice?.default_name || settings?.voice?.name
-            }
-          };
-    if (!mergedSettings.voice?.reference_wav_path && cfg.voice?.default_reference_wav) {
-      mergedSettings.voice = {
-        ...mergedSettings.voice,
-        reference_wav_path: defaultRefOverride || cfg.voice.default_reference_wav
-      };
-    }
+    const mergedSettings = mergeTtsSettingsWithDefaults(settings, cfg);
     const result = await generateAikaVoice({ text, settings: mergedSettings });
     if (result.warnings && result.warnings.length > 0) {
       res.set("x-tts-warnings", result.warnings.join(","));
@@ -3940,6 +3996,24 @@ app.get("/api/aika/voices", async (_req, res) => {
     if (engine === "piper") {
       const piperVoices = listPiperVoices();
       return res.json({ engine, voices: piperVoices, piperVoices });
+    }
+    if (engine === "openai") {
+      const openaiVoices = [
+        { id: "alloy", label: "alloy" },
+        { id: "ash", label: "ash" },
+        { id: "ballad", label: "ballad" },
+        { id: "cedar", label: "cedar" },
+        { id: "coral", label: "coral" },
+        { id: "echo", label: "echo" },
+        { id: "fable", label: "fable" },
+        { id: "marin", label: "marin" },
+        { id: "nova", label: "nova" },
+        { id: "onyx", label: "onyx" },
+        { id: "sage", label: "sage" },
+        { id: "shimmer", label: "shimmer" },
+        { id: "verse", label: "verse" }
+      ];
+      return res.json({ engine, voices: openaiVoices, piperVoices: listPiperVoices() });
     }
     return res.json({ engine, voices: [], piperVoices: listPiperVoices() });
   } catch (err) {
@@ -3971,6 +4045,13 @@ app.post("/api/aika/voice/test", async (req, res) => {
 
 app.get("/api/aika/tts/health", async (_req, res) => {
   const engine = getDefaultTtsEngine();
+  if (engine === "openai") {
+    return res.json({
+      engine,
+      online: Boolean(process.env.OPENAI_API_KEY),
+      model: process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts"
+    });
+  }
   if (engine !== "gptsovits") {
     return res.json({ engine, online: engine === "sapi" || engine === "coqui" });
   }
@@ -4040,6 +4121,10 @@ app.get("/api/aika/tts/diagnostics", async (_req, res) => {
 
   res.json({
     engine,
+    openai: {
+      configured: Boolean(process.env.OPENAI_API_KEY),
+      model: process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts"
+    },
     gptsovits: {
       url: ttsUrl,
       docsUrl: healthUrl,
@@ -4062,13 +4147,32 @@ app.get("/api/aika/tts/diagnostics", async (_req, res) => {
   });
 });
 
+app.post("/api/aika/avatar/runtime/lipsync/preview", (req, res) => {
+  try {
+    const text = String(req.body?.text || "").trim();
+    const durationMs = Number(req.body?.durationMs || 1800);
+    if (!text) {
+      return res.status(400).json({ status: "error", message: "text_required" });
+    }
+    const sequence = lipsyncEngine.generateLipsyncSequence(text, durationMs);
+    const rendererFormat = lipsyncEngine.lipsyncFormatForRenderer(sequence);
+    return res.json({ status: "ok", lipsync: rendererFormat });
+  } catch (error) {
+    return res.status(400).json({ status: "error", message: error.message || "lipsync_preview_failed" });
+  }
+});
+
 app.get("/api/aika/avatar/models", (_req, res) => {
   try {
     const manifestPath = path.join(live2dDir, "models.json");
-    if (!fs.existsSync(manifestPath)) return res.json({ models: [] });
+    if (!fs.existsSync(manifestPath)) {
+      return res.json({
+        models: withAvatarStatus(BUILT_IN_AVATAR_MODELS)
+      });
+    }
     const data = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
     const models = Array.isArray(data.models) ? data.models : [];
-    res.json({ models: withAvatarStatus(models) });
+    res.json({ models: withAvatarStatus(withBuiltInAvatarModels(models)) });
   } catch (err) {
     res.status(500).json({ error: err.message || "avatar_models_failed" });
   }
@@ -4101,7 +4205,7 @@ app.post("/api/aika/avatar/refresh", (_req, res) => {
 
     const preserved = existingModels.filter(model => {
       const engine = String(model.engine || "").toLowerCase();
-      return engine === "png" || (!model.modelUrl && model.fallbackPng);
+      return engine === "png" || engine === "cinematic" || engine === "portrait" || (!model.modelUrl && model.fallbackPng);
     });
 
     const models = [];
@@ -4135,7 +4239,7 @@ app.post("/api/aika/avatar/refresh", (_req, res) => {
     for (const model of models) {
       if (model?.id) merged.set(model.id, model);
     }
-    const nextModels = Array.from(merged.values());
+    const nextModels = withBuiltInAvatarModels(Array.from(merged.values()));
     fs.writeFileSync(manifestPath, JSON.stringify({ models: nextModels }, null, 2));
     res.json({ models: withAvatarStatus(nextModels) });
   } catch (err) {
@@ -7369,7 +7473,8 @@ app.get("/api/status", async (_req, res) => {
       selected: engine,
       engines: {
         gptsovits: { enabled: engine === "gptsovits", online: gptsovitsOnline, status: gptsovitsStatus },
-        piper: { enabled: engine === "piper", ready: Boolean(piperBin) && piperVoices > 0, voices: piperVoices }
+        piper: { enabled: engine === "piper", ready: Boolean(piperBin) && piperVoices > 0, voices: piperVoices },
+        openai: { enabled: engine === "openai", configured: Boolean(process.env.OPENAI_API_KEY), model: process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts" }
       }
     },
     integrations: buildIntegrationsState(getUserId(_req)),

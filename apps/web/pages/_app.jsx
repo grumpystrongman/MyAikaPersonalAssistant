@@ -1,3 +1,4 @@
+import Head from "next/head";
 import { useEffect } from "react";
 
 function patchFetchCredentials() {
@@ -18,5 +19,12 @@ export default function App({ Component, pageProps }) {
   useEffect(() => {
     patchFetchCredentials();
   }, []);
-  return <Component {...pageProps} />;
+  return (
+    <>
+      <Head>
+        <link rel="icon" type="image/png" href="/assets/aika/portraits/nocturne-human/favicon.png" />
+      </Head>
+      <Component {...pageProps} />
+    </>
+  );
 }
